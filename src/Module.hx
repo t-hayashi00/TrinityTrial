@@ -4,7 +4,7 @@ import openfl.events.KeyboardEvent;
 
 /**
  * ...
- * @author sigmal00
+ * @author t-hayashi00
  */
 class Module 
 {
