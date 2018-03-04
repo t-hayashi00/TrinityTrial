@@ -21,7 +21,7 @@ class Game
 	public static var height:Float;
 	public static var GRID_SIZE:Int = 16;
 	public static var MAX_SPEED:Float = 4.3;
-	public static var FC_VELOCITY:Float = 6;
+	public static var FC_VELOCITY:Float = 5.5;
 	public static var stage:Stage_;
 
 	var game:Sprite;
@@ -53,8 +53,9 @@ class Game
 
 	private function update(event:Event):Void
 	{
-		actorManager.update();
 		camera(actorManager.getSubject());
+		actorManager.update();
+		shake();
 	}
 
 	
@@ -64,5 +65,20 @@ class Game
 		
 		field.x = scroll.x;
 		field.y = scroll.y;
+	}
+	
+	private static var power:Float = 0;
+	private static var speed:Float = 0;
+	private static var time:Int = 0;
+	public static function setShake(power_:Float, speed_:Float, time_:Int){
+		power = power_;
+		speed = speed_;
+		time = time_;
+	}
+	private function shake(){
+		if (time <= 0) return;
+		field.y += speed*time;
+		power *=-1;
+		if(power<0)time--;
 	}
 }

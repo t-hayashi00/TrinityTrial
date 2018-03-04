@@ -10,9 +10,10 @@ import openfl.geom.Point;
  */
 class Enemy extends Actor
 {
-	
 	public function new(x:Float, y:Float, w:Float, h:Float) 
 	{
-		super(x,y,w,h);
+		cr = 0xFF0000;
+		super(x, y, w, h);
+		ATK = 0;
 	}
 }

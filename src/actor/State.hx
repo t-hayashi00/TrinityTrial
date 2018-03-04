@@ -7,5 +7,5 @@ enum State
 {
 	TRAIL;
 	WAIT;
-	DEAD;	
+	DEAD;
 }

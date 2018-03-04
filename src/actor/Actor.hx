@@ -13,31 +13,43 @@ class Actor
 	public var container:Sprite = new Sprite();
 	private var v:Point = new Point(0, 0);
 	private var t:Float = 0;
+	private var cr:UInt;
 	
 	private var divW:Int;
 	private var divH:Int;
 	private var jumped:Int = 2;
+	private var lostCount:Int = 60;
 
 	public var command:UInt = Module.command.FREE;
 	public var state:State = TRAIL;
+	public var HP:Int = 1;
+	public var ATK:Int = 0;
+	public var knockBack:Int = 0;
 	
 	public function new(x:Float, y:Float, w:Float, h:Float) 
 	{
 		container.x = x;
 		container.y = y;
-		container.graphics.beginFill(0xFFF00F,1.0);
+		container.graphics.beginFill(cr,1.0);
 		container.graphics.drawRect(0, 0, w, h);
 		divW = Math.floor((container.width-1) / Game.GRID_SIZE) + 2;
 		divH = Math.floor((container.height-1) / Game.GRID_SIZE) + 2;
 	}
 
 	public function update(){
-		if (state == DEAD) return;
-		t += if (isLimitBreak()) 0.01 else 0.02;
+		if (lostCount <= 0){
+			return;
+		}
+		if (HP <= 0){
+			state = DEAD;
+			lostCount--;
+		}
+		
+		t += if (isLimitBreak()) 0.001 else 0.02;
 		v.y += t;
 		
-		if (isLimitBreak()) command = Module.command.FREE;
-		
+		if (isLimitBreak() || knockBack-- > 0) command = Module.command.FREE;
+
 		if(checkCommand(Module.command.RIGHT)){
 			var tmp:Float = v.x;
 			v.x = 1;
@@ -69,12 +81,16 @@ class Actor
 		v.x *= 0.99;
 		if (0.001 <= v.x && v.x < 0.001) v.x = 0;
 		if (0.001 <= v.y && v.y < 0.001) v.y = 0;
+		
 	}
 	
 	private function checkCommand(check:UInt):Bool{
 		return (command & check == check);
 	}
 	
+	public function isLost():Bool{
+		return lostCount <= 0;
+	}
 	
 	public function addForce(f:Point, reset:Bool):Void{
 		if (reset){
@@ -130,6 +146,9 @@ class Actor
 					var right:String = Game.stage.getIDByFloat(container.x + container.width , container.y + j * container.height / (divH-1) );
 					if (left != "0" || right != "0"){
 						container.x -= tmp.x;
+						if (isLimitBreak()){
+							HP -= 1;
+						}
 						v.x *= if (isLimitBreak()) -0.99 else -0.1;
 						hitX = true;
 						break;
@@ -141,8 +160,17 @@ class Actor
 			}
 		}
 	}
+	
+	public function hitAffect(e:Actor):Void{
+		var f = new Point(container.x - e.container.x, container.y - e.container.y);
+		f.normalize(3);
+		f.add(e.getVelocity());
+		addForce(f, isLimitBreak());
+		knockBack = 6;
+		HP -= if(!e.isLimitBreak()) e.ATK else e.ATK*2;
+	}
 
-	private function isLimitBreak():Bool{
+	public function isLimitBreak():Bool{
 		return Math.sqrt(v.x * v.x + v.y * v.y) >= Game.FC_VELOCITY;
 	}
 }

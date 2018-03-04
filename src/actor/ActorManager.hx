@@ -12,16 +12,27 @@ class ActorManager
 {
 	public var container:Sprite = new Sprite();
 	public var subject:Point = new Point();
+	public var isExtincted:Bool = false;
 	private var pc:Actor;
 	private var bullet:Actor = null;
+	private var deadMan:List<Actor> = new List<Actor>();
 	private var npc:List<Actor> = new List<Actor>();
+	private var enemies:List<Actor> = new List<Actor>();
 	private var aiming:Aiming = new Aiming();
 	
 	public function new() 
 	{
-		var a = {RIGHT:0x10};
-		trace(a.RIGHT);
 		Game.display.addEventListener(MouseEvent.CLICK, throwing);
+		for(y in 0...Game.stage.getHeight()){
+			for(x in 0...Game.stage.getWidth()){
+				if(Game.stage.map[y][x] == "10"){
+					var e = new Player(Game.GRID_SIZE*x,Game.GRID_SIZE*y,12,16);
+					container.addChild(e.container);
+					enemies.add(e);
+					Game.stage.map[y][x] = "0";
+				}
+			}
+		}
 		for(i in 0...3){
 			var p = new Player(16 * (i + 2), 16, 12, 16);
 			container.addChild(p.container);
@@ -31,9 +42,21 @@ class ActorManager
 	}
 	
 	public function update(){
-		pcControl();
-		npcControl();
-		subjectUpdate();
+		enemyControl();
+		if(!isExtincted){
+			pcControl();
+			npcControl();
+			subjectUpdate();
+		}
+		var it:Iterator<Actor> = deadMan.iterator();
+		while (it.hasNext()){
+			var d = it.next();
+			d.update();
+			if(d.isLost()){
+				container.removeChild(d.container);
+				deadMan.remove(d);
+			}
+		}
 	}
 
 	private function pcControl(){
@@ -57,7 +80,8 @@ class ActorManager
 			pc.command += Module.command.UP;
 		}
 		pc.update();
-		if(pc.state == DEAD){
+		if (pc.state == DEAD){
+			deadMan.add(pc);
 			changeControl(true);
 		}
 	}
@@ -69,7 +93,8 @@ class ActorManager
 			var p = it.next();
 			p.update();
 			p.command = Module.command.FREE;
-			if(p.state == DEAD){
+			if (p.state == DEAD){
+				deadMan.add(p);
 				npc.remove(p);
 			}
 			if(p.state == TRAIL){
@@ -82,6 +107,32 @@ class ActorManager
 		if (bullet != null){
 			bullet.container.x = pc.container.x;
 			bullet.container.y = pc.container.y;
+		}
+	}
+
+	private function enemyControl(){
+		var eIt:Iterator<Actor> = enemies.iterator();
+		while (eIt.hasNext()){
+			var e = eIt.next();
+			if (Math.abs(e.container.x - subject.x) > Game.width) continue;
+			
+			var p:Actor = pc;
+			var pIt:Iterator<Actor> = npc.iterator();
+			while(!(e.knockBack > 0 || e.state == DEAD)){
+				if (e.container.hitTestObject(p.container)){
+					e.hitAffect(p);
+					p.hitAffect(e);
+					Game.setShake(1,1,1);
+				}
+				if (!pIt.hasNext()) break;
+				p = pIt.next();
+			}
+
+			e.update();
+			if(e.state == DEAD){
+				deadMan.add(e);
+				enemies.remove(e);
+			}
 		}
 	}
 	
@@ -151,15 +202,20 @@ class ActorManager
 		}
 	}
 	
-	private function changeControl(auto:Bool){
+	private function changeControl(dead:Bool){
 		if (npc.length == 0){
-			trace("game over!");
+			if (dead){
+				isExtincted = true;
+				trace("game over!");
+			}
 			return;
 		}
 		bullet = null;
 		container.removeChild(aiming.container);
-		pc.state = WAIT;
-		npc.add(pc);
+		if (pc != null){
+			pc.state = WAIT;
+			npc.add(pc);
+		}
 		pc = npc.pop();
 		pc.addForce(new Point(0, -1), false);
 		var it:Iterator<Actor> = npc.iterator();

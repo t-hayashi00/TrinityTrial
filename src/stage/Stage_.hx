@@ -14,7 +14,7 @@ class Stage_
 	public var container:Sprite = new Sprite();
 	public var showX:Float = 0;
 	public var showY:Float = 0;
-	private var map:Array<Array<String>> = new Array<Array<String>>();
+	public var map:Array<Array<String>> = new Array<Array<String>>();
 	private var w:Int;
 	private var h:Int;
 	private var fileName:String = "chip.png";
