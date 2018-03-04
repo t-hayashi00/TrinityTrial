@@ -79,9 +79,10 @@ class ActorManager
 		if (Module.isKeyPressed(Keyboard.SPACE)){
 			pc.command += Module.command.UP;
 		}
+		if (pc.state == DEAD)pc.command = Module.command.FREE;
 		pc.update();
-		if (pc.state == DEAD){
-			deadMan.add(pc);
+		if (pc.isLost()){
+			container.removeChild(pc.container);
 			changeControl(true);
 		}
 	}
@@ -137,6 +138,7 @@ class ActorManager
 	}
 	
 	private function subjectUpdate(){
+		if (pc.isLost()) return;
 		subject.setTo(pc.container.x, pc.container.y - 48);
 		if (bullet != null){
 			var radius:Point = new Point(container.parent.mouseX - pc.container.x, container.parent.mouseY - pc.container.y);
@@ -212,7 +214,7 @@ class ActorManager
 		}
 		bullet = null;
 		container.removeChild(aiming.container);
-		if (pc != null){
+		if (!dead){
 			pc.state = WAIT;
 			npc.add(pc);
 		}
