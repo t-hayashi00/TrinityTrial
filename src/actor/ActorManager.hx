@@ -32,7 +32,7 @@ class ActorManager
 	
 	public function update(){
 		enemyControl();
-		pm.playerControl();
+		var a = pm.playerControl();
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();

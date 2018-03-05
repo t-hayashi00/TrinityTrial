@@ -16,6 +16,8 @@ class PlayerManager
 	private var aiming:Aiming = new Aiming();
 	private var deadMan:List<Actor>;
 
+	private var bullets:List<Bullet> = new List<Bullet>();
+
 	public var subject:Point = new Point();
 	public var pc:Actor;
 	public var npc:List<Actor> = new List<Actor>();
@@ -30,20 +32,38 @@ class PlayerManager
 			container.addChild(p.container);
 			npc.add(p);
 		}
-		pc = npc.pop();		
+		pc = npc.pop();	
+		BulletGenerator.setup(bullets, container);
 	}
 	
 	public function playerControl():Bool{
 		if(!isExtincted){
 			pcControl();
 			npcControl();
+			bulletControl();
 			subjectUpdate();
 		}
 		return isExtincted;
 	}
+
+	private function bulletControl(){
+		var it:Iterator<Bullet> = bullets.iterator();
+		while (it.hasNext()){
+			var b = it.next();
+			b.update();
+			if(b.dead){
+				container.removeChild(b.container);
+				bullets.remove(b);
+			}
+		}
+	}
 	
 	private function pcControl(){
 		pc.command = Module.command.FREE;
+		if (Module.isKeyPressed(Keyboard.Z)){
+			trace("shoot");
+			BulletGenerator.setBullet1(pc.container.x, pc.container.y, aiming.container.x, aiming.container.y, 6);
+		}
 		if (Module.isKeyPressed(Keyboard.Q)){
 			changeControl(false,true);
 		}
@@ -195,8 +215,12 @@ class PlayerManager
 	}
 	
 	private function generatePlayer(){
+		if(npc.length >= 2){
+			return ;
+		}
 		var p = new Player(pc.container.x, pc.container.y, 12, 16);
 		container.addChild(p.container);
+		p.addForce(new Point(0, -1), true);
 		npc.add(p);
 	}
 }
