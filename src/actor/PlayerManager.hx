@@ -16,8 +16,6 @@ class PlayerManager
 	private var aiming:Aiming = new Aiming();
 	private var deadMan:List<Actor>;
 
-	private var bullets:List<Bullet> = new List<Bullet>();
-
 	public var subject:Point = new Point();
 	public var pc:Actor;
 	public var npc:List<Actor> = new List<Actor>();
@@ -33,37 +31,19 @@ class PlayerManager
 			npc.add(p);
 		}
 		pc = npc.pop();	
-		BulletGenerator.setup(bullets, container);
 	}
 	
 	public function playerControl():Bool{
 		if(!isExtincted){
 			pcControl();
 			npcControl();
-			bulletControl();
 			subjectUpdate();
 		}
 		return isExtincted;
 	}
 
-	private function bulletControl(){
-		var it:Iterator<Bullet> = bullets.iterator();
-		while (it.hasNext()){
-			var b = it.next();
-			b.update();
-			if(b.dead){
-				container.removeChild(b.container);
-				bullets.remove(b);
-			}
-		}
-	}
-	
 	private function pcControl(){
 		pc.command = Module.command.FREE;
-		if (Module.isKeyPressed(Keyboard.Z)){
-			trace("shoot");
-			BulletGenerator.setBullet1(pc.container.x, pc.container.y, aiming.container.x, aiming.container.y, 6);
-		}
 		if (Module.isKeyPressed(Keyboard.Q)){
 			changeControl(false,true);
 		}

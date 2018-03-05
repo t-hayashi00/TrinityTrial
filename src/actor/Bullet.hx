@@ -72,7 +72,16 @@ class Bullet
 		}
 		container.x += v.x;
 		container.y += v.y;
-	}	
+	}
+	
+	public function hitAffect(p:Actor):Void{
+		var f = new Point(container.x - p.container.x + p.container.width/2, container.y - p.container.y + p.container.height/2);
+		f.normalize(3);
+		f.add(v);
+		p.addForce(f, true);
+		p.knockBack = 6;
+		p.HP -= ATK;
+	}
 
 	private function speedCap(v:Point):Bool{
 		return (v.x * v.x + v.y * v.y) > (Game.MAX_SPEED * Game.MAX_SPEED * 2.25);

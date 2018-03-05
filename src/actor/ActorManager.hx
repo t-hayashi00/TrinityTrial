@@ -14,6 +14,8 @@ class ActorManager
 	private var pm:PlayerManager;
 	private var enemies:List<Actor> = new List<Actor>();
 	private var deadMan:List<Actor> = new List<Actor>();
+	private var bullets:List<Bullet> = new List<Bullet>();
+
 	
 	public function new() 
 	{
@@ -28,11 +30,18 @@ class ActorManager
 			}
 		}
 		pm = new PlayerManager(container, deadMan);
+		BulletGenerator.setup(bullets, container);
 	}
 	
+	var time:Int = 0;
 	public function update(){
+		time++;
+		if(time%180==0){
+			BulletGenerator.setBullet1(0, 0, pm.pc.container.x, pm.pc.container.y, 3);
+		}
 		enemyControl();
-		var a = pm.playerControl();
+		bulletControl();
+		var end = pm.playerControl();
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
@@ -48,7 +57,30 @@ class ActorManager
 		return pm.subject;
 	}
 
-
+	private function bulletControl(){
+		var it:Iterator<Bullet> = bullets.iterator();
+		while (it.hasNext()){
+			var b = it.next();
+			b.update();
+			
+			var p:Actor = pm.pc;
+			var it:Iterator<Actor> = pm.npc.iterator();
+			while(true){
+				if (b.container.hitTestObject(p.container)){
+					b.hitAffect(p);
+					trace("check");
+				}
+				if (!it.hasNext()) break;
+				p = it.next();
+			}
+			
+			if(b.dead){
+				container.removeChild(b.container);
+				bullets.remove(b);
+			}
+		}
+	}
+	
 	private function enemyControl(){
 		var eIt:Iterator<Actor> = enemies.iterator();
 		while (eIt.hasNext()){
