@@ -3,7 +3,7 @@ package;
 import openfl.events.KeyboardEvent;
 
 /**
- * ...
+ * キー入力などのゲーム全般で使用する機能をまとめたクラス
  * @author sigmal00
  */
 class Module 

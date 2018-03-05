@@ -5,7 +5,7 @@ import openfl.display.Bitmap;
 import openfl.display.Sprite;
 
 /**
- * ...
+ * マウスに沿って動く照準
  * @author sigmal00
  */
 class Aiming 

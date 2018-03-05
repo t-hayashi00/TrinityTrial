@@ -1,7 +1,7 @@
 package stage;
 
 /**
- * ...
+ * ステージの生成を行うクラス
  * @author sigmal00
  */
 class StageGenerator 

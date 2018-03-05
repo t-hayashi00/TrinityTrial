@@ -6,7 +6,7 @@ import openfl.display.DisplayObject;
 import openfl.display.Sprite;
 
 /**
- * ...
+ * ステージを表すクラス
  * @author sigmal00
  */
 class Stage_ 

@@ -5,7 +5,7 @@ import openfl.display.Sprite;
 import openfl.geom.Point;
 
 /**
- * ...
+ * 敵のスーパークラス
  * @author sigmal00
  */
 class Enemy extends Actor

@@ -11,7 +11,7 @@ import openfl.geom.Point;
 import openfl.geom.Rectangle;
 
 /**
- * ...
+ * ゲーム本体
  * @author sigmal00
  */
 class Game

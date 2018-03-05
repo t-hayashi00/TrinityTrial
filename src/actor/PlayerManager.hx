@@ -5,7 +5,7 @@ import openfl.display.Sprite;
 import openfl.events.MouseEvent;
 
 /**
- * ...
+ * 自機の操作を管理するクラス
  * @author sigmal00
  */
 class PlayerManager 

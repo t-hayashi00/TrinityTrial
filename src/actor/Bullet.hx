@@ -4,7 +4,8 @@ import openfl.geom.Point;
 import openfl.display.Sprite;
 
 /**
- * ...
+ * 敵弾を表すクラス
+ * 重力の影響は受けない
  * @author sigmal00
  */
 class Bullet 
@@ -81,6 +82,7 @@ class Bullet
 		p.addForce(f, true);
 		p.knockBack = 6;
 		p.HP -= ATK;
+		if (!through) dead = true;
 	}
 
 	private function speedCap(v:Point):Bool{

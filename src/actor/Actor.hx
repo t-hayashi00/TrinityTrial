@@ -5,7 +5,8 @@ import openfl.display.Sprite;
 import openfl.geom.Point;
 
 /**
- * ...
+ * 自機や敵などの基底クラス
+ * 地形や加わっている力に沿って動作する
  * @author sigmal00
  */
 class Actor 

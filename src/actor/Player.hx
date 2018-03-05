@@ -5,7 +5,7 @@ import openfl.display.Sprite;
 import openfl.geom.Point;
 
 /**
- * ...
+ * 自機を表すクラス
  * @author sigmal00
  */
 class Player extends Actor

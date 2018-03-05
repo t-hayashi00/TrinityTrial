@@ -5,7 +5,7 @@ import openfl.display.Sprite;
 import openfl.events.MouseEvent;
 
 /**
- * Playerの操作を行うクラス
+ * Actorの操作を行うクラス
  * @author sigmal00
  */
 class ActorManager
@@ -66,7 +66,7 @@ class ActorManager
 			var p:Actor = pm.pc;
 			var it:Iterator<Actor> = pm.npc.iterator();
 			while(true){
-				if (b.container.hitTestObject(p.container)){
+				if ((!b.dead) && b.container.hitTestObject(p.container)){
 					b.hitAffect(p);
 					trace("check");
 				}
