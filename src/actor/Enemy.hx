@@ -14,6 +14,6 @@ class Enemy extends Actor
 	{
 		cr = 0xFF0000;
 		super(x, y, w, h);
-		ATK = 0;
+		ATK = 1;
 	}
 }

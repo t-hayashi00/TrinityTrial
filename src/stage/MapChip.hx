@@ -24,7 +24,7 @@ class MapChip
 			image.scrollRect = drawArea;
 			container.addChild(image);
 		}else{
-			var c:Int = if (x == 1)0xFF0000; else 0x00FF00;
+			var c:Int = if (x == 1)0x00FF00; else 0x00FF00;
 			container.graphics.beginFill(c,1.0);
 			container.graphics.drawRect(0,0,16,16);
 		}

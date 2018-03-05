@@ -121,7 +121,7 @@ class Actor
 					var under:String = Game.stage.getIDByFloat(container.x + j * container.width / (divW - 1) , container.y + container.height);
 					if (under == "-1"){
 						trace("dead");
-						state = DEAD;
+						HP = 0;
 						return;
 					}
 					if(under != "0"){
