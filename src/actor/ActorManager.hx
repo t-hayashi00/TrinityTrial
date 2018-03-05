@@ -21,7 +21,7 @@ class ActorManager
 	{
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
-				if(Game.stage.map[y][x] == "10"){
+				if(Game.stage.map[y][x] == "11"){
 					var e = new Enemy(Game.GRID_SIZE*x,Game.GRID_SIZE*y,12,16);
 					container.addChild(e.container);
 					enemies.add(e);

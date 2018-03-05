@@ -1,7 +1,7 @@
 package stage;
 
+import openfl.geom.Point;
 import openfl.Assets;
-import openfl.display.Bitmap;
 import openfl.display.DisplayObject;
 import openfl.display.Sprite;
 
@@ -88,6 +88,18 @@ class Stage_
 		var x:Int = Math.floor(x_/ Game.GRID_SIZE);
 		var y:Int = Math.floor(y_ / Game.GRID_SIZE);
 		return getID(x,y);
+	}
+	
+	public function getPlayerPos():Point{
+		for (y in 0...h){
+			for (x in 0...w){
+				if (map[y][x] == "10"){
+					map[y][x] = "0";
+					return new Point(x * 16, y * 16);
+				}
+			}
+		}
+		return new Point(16, 16);
 	}
 	
 	public function getWidth():Int{

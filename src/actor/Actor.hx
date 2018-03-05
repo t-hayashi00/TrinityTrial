@@ -33,6 +33,7 @@ class Actor
 		container.y = y;
 		container.graphics.beginFill(cr,1.0);
 		container.graphics.drawRect(0, 0, w, h);
+		container.graphics.beginFill(0x000000,1.0);
 		divW = Math.floor((container.width-1) / Game.GRID_SIZE) + 2;
 		divH = Math.floor((container.height-1) / Game.GRID_SIZE) + 2;
 	}
@@ -110,10 +111,22 @@ class Actor
 	}
 	
 	private function hitTerrain(){
+		var under:String = Game.stage.getIDByFloat(container.x, container.y + container.height);
+		while(under != "0"){
+			for (j in 1...divW){
+				under = Game.stage.getIDByFloat(container.x + j * container.width/ (divW-1), container.y + container.height);
+				if (under != "0"){
+					container.y -= 0.2;
+				}else {
+					break;
+				}
+			}
+		}
+		
 		var divV:Int = 8;
 		var tmp:Point = new Point(v.x / divV, v.y / divV);
 		var hitX:Bool = false;
-		var hitY:Bool = false;
+		var hitY:Bool = false;		
 		for (i in 0...divV){
 			if (!hitY){
 				container.y += tmp.y;

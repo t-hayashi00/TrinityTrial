@@ -25,8 +25,9 @@ class PlayerManager
 		this.deadMan = deadMan;
 		container = parent;
 		Game.display.addEventListener(MouseEvent.CLICK, throwing);
+		var pos = Game.stage.getPlayerPos();
 		for(i in 0...3){
-			var p = new Player(16 * (i + 2), 16, 12, 16);
+			var p = new Player(pos.x + 16*(i-1), pos.y, 12, 16);
 			container.addChild(p.container);
 			npc.add(p);
 		}
