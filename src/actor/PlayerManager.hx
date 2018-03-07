@@ -90,9 +90,11 @@ class PlayerManager
 		{
 			pc.command += Module.command.UP;
 		}
-		if (Module.isKeyPressed(Keyboard.X))
+		if (Module.isKeyDown(Keyboard.X))
 		{
-			throwing();
+			if (bullet ==null) throwing();
+		}else{
+			if (bullet !=null) throwing();
 		}
 		var isAlive = pc.update();
 
@@ -251,7 +253,8 @@ class PlayerManager
 		if (npc.length >= 2)
 		{
 			var p = npc.pop();
-			container.removeChild(p.container);
+			p.HP = 0;
+			deadMan.add(p);
 			npc.remove(p);
 		}
 		var p = new Player(pc.container.x, pc.container.y, 12, 16);
