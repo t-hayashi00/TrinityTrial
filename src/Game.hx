@@ -75,6 +75,7 @@ class Game
 		speed = speed_;
 		time = time_;
 	}
+	
 	private function shake(){
 		if (time <= 0) return;
 		field.y += speed*time;

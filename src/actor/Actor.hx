@@ -26,6 +26,8 @@ class Actor
 	public var HP:Int = 1;
 	public var ATK:Int = 0;
 	public var knockBack:Int = 0;
+	public var limitBreakCount:Int = 0;
+	public var hitStop:Int = 0;
 	
 	public function new(x:Float, y:Float, w:Float, h:Float) 
 	{
@@ -38,11 +40,15 @@ class Actor
 		divH = Math.floor((container.height-1) / Game.GRID_SIZE) + 2;
 	}
 
-	public function update(){
-		if (lostCount <= 0){
-			return;
+	public function update():Bool{
+		if (hitStop > 0){
+			container.x += (Math.random() - 0.5) * hitStop*0.5;
+			container.y += (Math.random() - 0.5) * hitStop*0.5;
+			hitStop--;
+			return true;
 		}
 		if (HP <= 0){
+			if (lostCount == 60) hitStop = 15;
 			state = DEAD;
 			lostCount--;
 		}
@@ -52,6 +58,7 @@ class Actor
 		
 		if (isLimitBreak() || knockBack-- > 0) command = Module.command.FREE;
 
+		if (state == DEAD)command = Module.command.FREE;
 		if(checkCommand(Module.command.RIGHT)){
 			var tmp:Float = v.x;
 			v.x = 1;
@@ -84,14 +91,12 @@ class Actor
 		if (0.001 <= v.x && v.x < 0.001) v.x = 0;
 		if (0.001 <= v.y && v.y < 0.001) v.y = 0;
 		
+		if(isLimitBreak())limitBreakCount--;
+		return lostCount > 0;
 	}
 	
 	private function checkCommand(check:UInt):Bool{
 		return (command & check == check);
-	}
-	
-	public function isLost():Bool{
-		return lostCount <= 0;
 	}
 	
 	public function addForce(f:Point, reset:Bool):Void{
@@ -111,13 +116,14 @@ class Actor
 	}
 	
 	private function hitTerrain(){
-		var under:String = Game.stage.getIDByFloat(container.x, container.y + container.height);
-		while(under != "0"){
-			for (j in 1...divW){
-				under = Game.stage.getIDByFloat(container.x + j * container.width/ (divW-1), container.y + container.height);
+		var isBuried:Bool = true;
+		while (isBuried){
+			isBuried = false;
+			for (j in 0...divW){
+				var under:String = Game.stage.getIDByFloat(container.x, container.y + container.height);
 				if (under != "0"){
-					container.y -= 0.2;
-				}else {
+					container.y -= 0.1;
+					isBuried = true;
 					break;
 				}
 			}
@@ -160,9 +166,6 @@ class Actor
 					var right:String = Game.stage.getIDByFloat(container.x + container.width , container.y + j * container.height / (divH-1) );
 					if (left != "0" || right != "0"){
 						container.x -= tmp.x;
-						if (isLimitBreak()){
-							HP -= 1;
-						}
 						v.x *= if (isLimitBreak()) -0.99 else -0.1;
 						hitX = true;
 						break;
@@ -181,10 +184,11 @@ class Actor
 		f.add(e.getVelocity());
 		addForce(f, isLimitBreak());
 		knockBack = 6;
-		HP -= if(!e.isLimitBreak()) e.ATK else e.ATK*2;
+		HP -= if (!e.isLimitBreak()) e.ATK else e.ATK + 1;
 	}
 
 	public function isLimitBreak():Bool{
-		return Math.sqrt(v.x * v.x + v.y * v.y) >= Game.FC_VELOCITY;
+		return limitBreakCount > 0;
+//		return Math.sqrt(v.x * v.x + v.y * v.y) >= Game.FC_VELOCITY;
 	}
 }

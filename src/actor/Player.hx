@@ -17,6 +17,6 @@ class Player extends Actor
 		cr = 0x0000FF;
 		super(x, y, w, h);
 		HP = 1;
-		ATK = 3;
+		ATK = 0;
 	}
 }

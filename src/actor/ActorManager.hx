@@ -19,34 +19,30 @@ class ActorManager
 	
 	public function new() 
 	{
+		BulletGenerator.setup(bullets, container);
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
-				if(Game.stage.map[y][x] == "11"){
-					var e = new Enemy(Game.GRID_SIZE*x,Game.GRID_SIZE*y,12,16);
+				switch(Game.stage.map[y][x]){
+				case "11":
+					var e = new Enemy2(Game.GRID_SIZE*x,Game.GRID_SIZE*y, bullets);
 					container.addChild(e.container);
 					enemies.add(e);
 					Game.stage.map[y][x] = "0";
+				default:
 				}
 			}
 		}
 		pm = new PlayerManager(container, deadMan);
-		BulletGenerator.setup(bullets, container);
 	}
 	
-	var time:Int = 0;
 	public function update(){
-		time++;
-		if(time%180==0){
-			BulletGenerator.setBullet1(0, 0, pm.pc.container.x, pm.pc.container.y, 3);
-		}
 		enemyControl();
 		bulletControl();
 		var end = pm.playerControl();
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
-			d.update();
-			if(d.isLost()){
+			if(!d.update()){
 				container.removeChild(d.container);
 				deadMan.remove(d);
 			}
@@ -68,7 +64,6 @@ class ActorManager
 			while(true){
 				if ((!b.dead) && b.container.hitTestObject(p.container)){
 					b.hitAffect(p);
-					trace("check");
 				}
 				if (!it.hasNext()) break;
 				p = it.next();
@@ -93,7 +88,6 @@ class ActorManager
 				if (e.container.hitTestObject(p.container)){
 					e.hitAffect(p);
 					p.hitAffect(e);
-					Game.setShake(1,1,1);
 				}
 				if (!pIt.hasNext()) break;
 				p = pIt.next();

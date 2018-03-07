@@ -11,11 +11,17 @@ import openfl.display.Sprite;
 class Aiming 
 {
 	public var container:Sprite = new Sprite();
+	public var degree:Float = 270;
+	
 	public function new() 
 	{
 		var bitmap:Bitmap = new Bitmap(Assets.getBitmapData("img/c_cursor.png"));
-		bitmap.x = -bitmap.width / 2;
-		bitmap.y = -bitmap.height / 2;
+		bitmap.x -= 2;
 		container.addChild(bitmap);
-	}	
+	}
+	
+	public function getRad():Float{
+		return Math.PI / 180 * degree;
+	}
+	
 }

@@ -1,6 +1,8 @@
 package ;
 
 import openfl.display.Sprite;
+import haxe.macro.Expr;
+using Sequencer;
 
 /**
  * Main
@@ -13,6 +15,5 @@ class Main extends Sprite
 	{
 		super();
 		game = new Game(this);
-	}
-
+	}	
 }
