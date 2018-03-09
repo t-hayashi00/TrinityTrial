@@ -1,8 +1,5 @@
 package actor;
 
-import openfl.display.DisplayObject;
-import openfl.display.Sprite;
-import openfl.geom.Point;
 using Sequencer;
 
 /**
@@ -22,15 +19,15 @@ class Enemy2 extends Enemy
 		this.bullets = bullets;
 		seq.add(
 		{
-			command = Module.command.FREE;
-			command += Module.command.UP;
+			state.command = State.commands.FREE;
+//			state.command += State.commands.UP;
 		});
 		seq.wait(30);
 		seq.add(
 		{
-			BulletGenerator.setBullet1(container.x, container.y, container.x-1, container.y, 3);
+			BulletProducer.setBullet2(container.x, container.y, container.x-1, container.y, 3);
 		});
-		seq.wait(60);
+		seq.wait(120);
 	}
 	
 	private function test():Void{
@@ -38,7 +35,7 @@ class Enemy2 extends Enemy
 	}
 	
 	public override function update():Bool{
-		if(state != DEAD) seq.run();
+		if(state.act != State.actions.DEAD) seq.run();
 		return super.update();
 	}
 }

@@ -76,13 +76,16 @@ class Bullet
 	}
 	
 	public function hitAffect(p:Actor):Void{
+		if (!through) dead = true;
+		if (p.invincible > 0) return;
 		var f = new Point(container.x - p.container.x + p.container.width/2, container.y - p.container.y + p.container.height/2);
 		f.normalize(3);
 		f.add(v);
 		p.addForce(f, true);
 		p.knockBack = 6;
+		p.hitStop = 6;
+		p.invincible = 30;
 		p.HP -= ATK;
-		if (!through) dead = true;
 	}
 
 	private function speedCap(v:Point):Bool{

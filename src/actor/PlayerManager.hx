@@ -11,7 +11,7 @@ class PlayerManager
 {
 	private var container:Sprite;
 	private var isExtincted:Bool = false;
-	private var bullet:Actor = null;
+	private var shell:Actor = null;
 	private var aiming:Aiming = new Aiming();
 	private var deadMan:List<Actor>;
 
@@ -32,6 +32,7 @@ class PlayerManager
 		}
 		pc = npc.pop();
 	}
+	
 	public function playerControl():Bool
 	{
 		if (!isExtincted)
@@ -44,57 +45,64 @@ class PlayerManager
 
 	private function pcControl():Bool
 	{
-		pc.command = Module.command.FREE;
-		if (Module.isKeyPressed(Keyboard.A))
+		if (Module.isKeyPressed(Keyboard.Q))
 		{
-			generatePlayer();
+			isExtincted = false;
+			generatePlayer(48, 48);
 		}
-		if (Module.isKeyPressed(Keyboard.S))
-		{
-		}
+		pc.state.command = State.commands.FREE;
 		if (Module.isKeyPressed(Keyboard.SHIFT))
 		{
 			changeControl(false,false);
 		}
-		if (Module.isKeyDown(Keyboard.DOWN))
+		if (pc.state.act != State.actions.DEAD)
 		{
-			if (bullet == null)
+			if (Module.isKeyPressed(Keyboard.A))
+			{
+				generatePlayer(pc.container.x, pc.container.y);
+			}
+			if (Module.isKeyPressed(Keyboard.S))
 			{
 				gather();
 			}
-			else
-			{
-				aiming.degree += 1.5;
-			}
-		}
-		else if (Module.isKeyDown(Keyboard.UP))
-		{
-			if (bullet == null)
+			if (Module.isKeyPressed(Keyboard.D))
 			{
 				disband();
 			}
+			if (Module.isKeyDown(Keyboard.DOWN) && shell != null)
+			{
+				if(aiming.controlAng < 180)aiming.controlAng += 1.5;
+			}
+			else if (Module.isKeyDown(Keyboard.UP) && shell != null)
+			{
+				if(aiming.controlAng > 0)aiming.controlAng -= 1.5;
+			}
+			if (Module.isKeyDown(Keyboard.LEFT))
+			{
+				pc.state.command += State.commands.LEFT;
+				if (shell == null) pc.state.dir = State.directions.LEFT;
+			}
+			if (Module.isKeyDown(Keyboard.RIGHT))
+			{
+				pc.state.command += State.commands.RIGHT;
+				if (shell == null) pc.state.dir = State.directions.RIGHT;
+			}
+			if (Module.isKeyPressed(Keyboard.Z))
+			{
+				pc.state.command += State.commands.UP;
+			}
+
+			if (shell == null)
+			{
+				if (Module.isKeyPressed(Keyboard.X))throwing();
+			}
 			else
 			{
-				aiming.degree -= 1.5;
+				if (Module.isKeyDoubleClick(Keyboard.RIGHT)) pc.state.dir = State.directions.RIGHT;
+				if (Module.isKeyDoubleClick(Keyboard.LEFT)) pc.state.dir = State.directions.LEFT;
+				if (!Module.isKeyDown(Keyboard.X)) throwing();
+				if (Module.isKeyDown(Keyboard.C)) cancelThrowing();
 			}
-		}
-		if (Module.isKeyDown(Keyboard.LEFT))
-		{
-			pc.command += Module.command.LEFT;
-		}
-		if (Module.isKeyDown(Keyboard.RIGHT))
-		{
-			pc.command += Module.command.RIGHT;
-		}
-		if (Module.isKeyPressed(Keyboard.Z))
-		{
-			pc.command += Module.command.UP;
-		}
-		if (Module.isKeyDown(Keyboard.X))
-		{
-			if (bullet ==null) throwing();
-		}else{
-			if (bullet !=null) throwing();
 		}
 		var isAlive = pc.update();
 
@@ -115,35 +123,33 @@ class PlayerManager
 		{
 			var p = it.next();
 			p.update();
-			p.command = Module.command.FREE;
-			if (p.state == DEAD)
+			p.state.command = State.commands.FREE;
+			if (p.state.act == State.actions.DEAD)
 			{
 				deadMan.add(p);
 				npc.remove(p);
 			}
-			if (p.state == TRAIL)
+			if (p.state.act == State.actions.TRAIL)
 			{
-				if (previous.container.y - p.container.y <= -24) p.command += Module.command.UP;
-				if (previous.container.x - p.container.x >= 16) p.command += Module.command.RIGHT;
-				if (previous.container.x - p.container.x <= -16) p.command += Module.command.LEFT;
+				if (previous.container.y - p.container.y <= -24) p.state.command += State.commands.UP;
+				if (previous.container.x - p.container.x >= 16) p.state.command += State.commands.RIGHT;
+				if (previous.container.x - p.container.x <= -16) p.state.command += State.commands.LEFT;
 				previous = p;
 			}
 		}
-		if (bullet != null)
+
+		if (shell != null)
 		{
-			bullet.container.x = pc.container.x;
-			bullet.container.y = pc.container.y;
+			aiming.update(pc.container.x, pc.container.y, pc.state.dir);
+			shell.container.x = pc.container.x - 6 * pc.state.dir;
+			shell.container.y = pc.container.y - 8;
+			if (shell.state.act == State.actions.DEAD) cancelThrowing();
 		}
 	}
 
 	private function subjectUpdate()
 	{
 		subject.setTo(pc.container.x, pc.container.y - 48);
-		if (bullet != null)
-		{
-			aiming.container.x = pc.container.x + Math.cos(aiming.getRad())*96;
-			aiming.container.y = pc.container.y + Math.sin(aiming.getRad())*96;
-		}
 		if (subject.x < (Game.width/2) / container.parent.scaleX)
 		{
 			subject.x = (Game.width/2) / container.parent.scaleX;
@@ -164,7 +170,7 @@ class PlayerManager
 
 	private function throwing()
 	{
-		if (bullet == null)
+		if (shell == null)
 		{
 			var it:Iterator<Actor> = npc.iterator();
 			while (it.hasNext())
@@ -173,22 +179,33 @@ class PlayerManager
 				var inside:Point = new Point(pc.container.x - p.container.x, pc.container.y - p.container.y);
 				if ((-20 < inside.x && inside.x < 20)&&(-20 < inside.y && inside.y < 20))
 				{
-					bullet = p;
+					shell = p;
 					container.addChild(aiming.container);
 					break;
 				}
 			}
 		}
-		else{
-			bullet.state = WAIT;
-			var v:Point = new Point(aiming.container.x - bullet.container.x, aiming.container.y - bullet.container.y);
+		else
+		{
+			shell.container.x = pc.container.x;
+			shell.container.y = pc.container.y - 8;
+			shell.state.act = State.actions.WAIT;
+			var v:Point = new Point(aiming.container.x - shell.container.x, aiming.container.y - shell.container.y);
 			v.normalize(Game.FC_VELOCITY + 1);
 			v.add(pc.getVelocity());
-			bullet.addForce(v, true);
-			bullet.limitBreakCount = 30;
-			bullet = null;
+			shell.addForce(v, true);
+			shell.shellCount = 30;
+			shell = null;
 			container.removeChild(aiming.container);
 		}
+	}
+
+	private function cancelThrowing()
+	{
+		shell.container.x = pc.container.x;
+		shell.container.y = pc.container.y - 8;
+		shell = null;
+		container.removeChild(aiming.container);
 	}
 
 	private function gather()
@@ -197,7 +214,7 @@ class PlayerManager
 		while (it.hasNext())
 		{
 			var p = it.next();
-			p.state = TRAIL;
+			p.state.act = State.actions.TRAIL;
 		}
 	}
 
@@ -207,7 +224,7 @@ class PlayerManager
 		while (it.hasNext())
 		{
 			var p = it.next();
-			p.state = WAIT;
+			p.state.act = State.actions.WAIT;
 		}
 	}
 
@@ -221,11 +238,10 @@ class PlayerManager
 			}
 			return;
 		}
-		bullet = null;
-		container.removeChild(aiming.container);
+		if (shell != null)cancelThrowing();
 		if (!dead)
 		{
-			pc.state = WAIT;
+			pc.state.act = State.actions.WAIT;
 			if (reverse) npc.push(pc);
 			else npc.add(pc);
 		}
@@ -240,24 +256,25 @@ class PlayerManager
 		while (it.hasNext())
 		{
 			var p = it.next();
-			p.state = WAIT;
+			p.state.act = State.actions.WAIT;
 			if (pc.inRange(p.container.x, p.container.y, 32))
 			{
-				p.state = TRAIL;
+				p.state.act = State.actions.TRAIL;
 			}
 		}
 	}
 
-	private function generatePlayer()
+	private function generatePlayer(x:Float, y:Float)
 	{
 		if (npc.length >= 2)
 		{
-			var p = npc.pop();
+			var p = npc.first();
+			if (p.isLimitBreak()) return;
 			p.HP = 0;
 			deadMan.add(p);
 			npc.remove(p);
 		}
-		var p = new Player(pc.container.x, pc.container.y, 12, 16);
+		var p = new Player(x, y, 12, 16);
 		container.addChild(p.container);
 		p.addForce(new Point(0, -1), true);
 		npc.add(p);

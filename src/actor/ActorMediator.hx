@@ -1,14 +1,12 @@
 package actor;
 import openfl.geom.Point;
-import openfl.ui.Keyboard;
 import openfl.display.Sprite;
-import openfl.events.MouseEvent;
 
 /**
  * Actorの操作を行うクラス
  * @author sigmal00
  */
-class ActorManager
+class ActorMediator
 {
 	public var container:Sprite = new Sprite();
 	private var pm:PlayerManager;
@@ -19,7 +17,7 @@ class ActorManager
 	
 	public function new() 
 	{
-		BulletGenerator.setup(bullets, container);
+		BulletProducer.setup(bullets, container);
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
 				switch(Game.stage.map[y][x]){
@@ -80,21 +78,21 @@ class ActorManager
 		var eIt:Iterator<Actor> = enemies.iterator();
 		while (eIt.hasNext()){
 			var e = eIt.next();
-			if (Math.abs(e.container.x - pm.subject.x) > Game.width) continue;
+			if (Math.abs(e.container.x - pm.subject.x) > Game.width/2) continue;
 			
 			var p:Actor = pm.pc;
 			var pIt:Iterator<Actor> = pm.npc.iterator();
-			while(!(e.knockBack > 0 || e.state == DEAD)){
+			while(!(e.invincible > 0 || e.state.act == State.actions.DEAD)){
 				if (e.container.hitTestObject(p.container)){
-					e.hitAffect(p);
 					p.hitAffect(e);
+					e.hitAffect(p);
 				}
 				if (!pIt.hasNext()) break;
 				p = pIt.next();
 			}
 
 			e.update();
-			if(e.state == DEAD){
+			if(e.state.act == State.actions.DEAD){
 				deadMan.add(e);
 				enemies.remove(e);
 			}

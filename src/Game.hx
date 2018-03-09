@@ -27,7 +27,7 @@ class Game
 	var game:Sprite;
 	var field:Sprite = new Sprite();
 	var panorama:Bitmap = new Bitmap(Assets.getBitmapData("img/panorama.png"));
-	var actorManager:ActorManager;
+	var actorMediator:ActorMediator;
 	
 	public function new(game:Sprite)
 	{
@@ -40,11 +40,11 @@ class Game
 		game.stage.addEventListener(Event.ENTER_FRAME, update);
 		game.stage.frameRate = 60;
 		game.scrollRect = new Rectangle(0, 0, panorama.width, panorama.height);
-		stage = StageGenerator.generate(0, 0);
+		stage = StageFactory.generate(0, 0);
 		game.addChild(field);
 		field.addChild(stage.container);
-		actorManager = new ActorManager();
-		field.addChild(actorManager.container);
+		actorMediator = new ActorMediator();
+		field.addChild(actorMediator.container);
 		field.scaleX = 2.0;
 		field.scaleY = 2.0;
 		trace(display.width);
@@ -53,8 +53,8 @@ class Game
 
 	private function update(event:Event):Void
 	{
-		camera(actorManager.getSubject());
-		actorManager.update();
+		camera(actorMediator.getSubject());
+		actorMediator.update();
 		shake();
 	}
 

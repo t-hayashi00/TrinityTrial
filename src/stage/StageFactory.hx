@@ -4,7 +4,7 @@ package stage;
  * ステージの生成を行うクラス
  * @author sigmal00
  */
-class StageGenerator 
+class StageFactory 
 {
 	public static function generate(stage:Int,floor:Int):Stage_{
 		var fileName:String;

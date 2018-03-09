@@ -1,61 +1,63 @@
 package stage;
 
+import openfl.geom.Rectangle;
 import openfl.geom.Point;
 import openfl.Assets;
 import openfl.display.DisplayObject;
 import openfl.display.Sprite;
+import openfl.display.Bitmap;
+import openfl.display.BitmapData;
 
 /**
- * ステージを表すクラス
+ * ステージの基底クラス
  * @author sigmal00
  */
 class Stage_ 
 {
 	public var container:Sprite = new Sprite();
+	public var bmp:Bitmap;
 	public var showX:Float = 0;
 	public var showY:Float = 0;
 	public var map:Array<Array<String>> = new Array<Array<String>>();
 	private var w:Int;
 	private var h:Int;
-	private var fileName:String = "chip.png";
+	private var mapChip:BitmapData;
 	
 	private var chipKey:Map<Int,Int> = new Map<Int,Int>();
 
 	public function new(stage:Int, floor:Int, fileName:String) {
-		this.fileName = fileName;
+		mapChip = Assets.getBitmapData("img/chip.png");
 		var input:String;
 		try{
-			input = Assets.getText("img/stage" + stage+"-" + floor + ".txt");
+			input = Assets.getText("img/stage" + stage+"-" + floor + ".csv");
 		}catch(msg:String){
 			input = "0";
 			trace(msg);
 		}		
 		var tmp:Array<String> = input.split("\r\n");
 		h = tmp.length;
-		w = tmp[0].split(" ").length;
+		w = tmp[0].split(",").length;
 		for(i in 0...tmp.length){
-			map.push(cast(tmp[i].split(" ")));
+			map.push(cast(tmp[i].split(",")));
 		}
 		
+		bmp = new Bitmap(new BitmapData(Game.GRID_SIZE * w, Game.GRID_SIZE * h));
 		var cnt:Int = 0;
-		var c:Int = 0xFF0000;
-		container.graphics.beginFill(c,1.0);
+		var c:Int = 0x00CC00;
 		for (y in 0...h){
 			for (x in 0...w){
+				var rect:Rectangle = new Rectangle(0, 0, Game.GRID_SIZE, Game.GRID_SIZE);
+				chipKey.set(x+y*w,cnt++);
 				switch(map[y][x]){
-/*				case "2":
-					chipKey.set(x+y*w,cnt++);
-					var mapchip = new Bitmap(Assets.getBitmapData("img/chip.png"));
-					container.addChild(mapchip);
-					mapchip.x = 16*x;
-					mapchip.y = 16*y;
-*/				case "1":
-					chipKey.set(x+y*w,cnt++);
-					container.graphics.drawRect(16 * x, 16 * y, 16, 16);
+				case "1":
+					rect.x = 16;
 				default:
+					rect.x = 0;
 				}
+				bmp.bitmapData.copyPixels(mapChip,rect,new Point (x*16,y*16));
 			}
 		}
+		container.addChild(bmp);
 		trace("stage constructed");
 	}
 
@@ -107,10 +109,6 @@ class Stage_
 	}
 	
 	public function getHeight():Int{
-		return h;		
-	}
-	
-	public function getFileName():String{
-		return fileName;
+		return h;
 	}
 }
