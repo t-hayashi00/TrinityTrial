@@ -1,14 +1,16 @@
 package animator;
-import animator.animation.*;
+import animator.animation.Animation;
 
 /**
- * ...
+ * アニメーションを生成する
  * @author sigmal00
  */
-class AnimationFactory 
+class AnimationFactory
 {
-	static public function getAnimation(animationName:String):Animation{
-		switch (animationName){
+	public static function get(animationName:String):Animation
+	{
+		switch (animationName)
+		{
 		default:
 			return new Animation();
 		}

@@ -1,4 +1,4 @@
-package ;
+package;
 
 import stage.*;
 import actor.*;
@@ -9,12 +9,11 @@ import openfl.display.Sprite;
 import openfl.events.Event;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
-
 /**
  * ゲーム本体
  * @author sigmal00
  */
-class Game
+class Game 
 {
 	public static var display:Stage;
 	public static var width:Float;
@@ -24,10 +23,10 @@ class Game
 	public static var FC_VELOCITY:Float = 5.5;
 	public static var stage:Stage_;
 
-	var game:Sprite;
-	var field:Sprite = new Sprite();
-	var panorama:Bitmap = new Bitmap(Assets.getBitmapData("img/panorama.png"));
-	var actorMediator:ActorMediator;
+	private var game:Sprite;
+	private var field:Sprite = new Sprite();
+	private var panorama:Bitmap = new Bitmap(Assets.getBitmapData("img/panorama.png"));
+	private var actorMediator:ActorMediator;
 	
 	public function new(game:Sprite)
 	{
@@ -40,22 +39,22 @@ class Game
 		game.stage.addEventListener(Event.ENTER_FRAME, update);
 		game.stage.frameRate = 60;
 		game.scrollRect = new Rectangle(0, 0, panorama.width, panorama.height);
-		stage = StageFactory.generate(0, 0);
+		
 		game.addChild(field);
+		
+		stage = StageFactory.generate(0, 0);
 		field.addChild(stage.container);
+		
 		actorMediator = new ActorMediator();
 		field.addChild(actorMediator.container);
 		field.scaleX = 2.0;
 		field.scaleY = 2.0;
-		trace(display.width);
-		trace(game.scrollRect.width);
 	}
 
 	private function update(event:Event):Void
 	{
 		camera(actorMediator.getSubject());
 		actorMediator.update();
-		shake();
 	}
 
 	
@@ -65,21 +64,5 @@ class Game
 		
 		field.x = scroll.x;
 		field.y = scroll.y;
-	}
-	
-	private static var power:Float = 0;
-	private static var speed:Float = 0;
-	private static var time:Int = 0;
-	public static function setShake(power_:Float, speed_:Float, time_:Int){
-		power = power_;
-		speed = speed_;
-		time = time_;
-	}
-	
-	private function shake(){
-		if (time <= 0) return;
-		field.y += speed*time;
-		power *=-1;
-		if(power<0)time--;
-	}
+	}	
 }

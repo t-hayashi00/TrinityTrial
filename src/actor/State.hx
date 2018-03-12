@@ -10,12 +10,12 @@ class State
 		FREE:0x0,
 		RIGHT:0x1,
 		LEFT:0x2,
-		UP:0x4
+		UP:0x8
 	};
 	static public var actions = {
 		TRAIL:0,//NPC専用ステート
 		WAIT:1,
-		SHOT:2,
+		HOLD:2,
 		DEAD:3
 	};
 	static public var directions = {
@@ -23,6 +23,7 @@ class State
 		RIGHT:1
 	};
 	public var command:UInt = commands.FREE;
+	public var jumped:Int = 0;
 	public var act:Int = actions.TRAIL;
 	public var dir:Int = directions.RIGHT;
 	

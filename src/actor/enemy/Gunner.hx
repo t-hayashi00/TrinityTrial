@@ -1,12 +1,13 @@
-package actor;
+package actor.enemy;
+import actor.enemy.Enemy;
 
 using Sequencer;
 
 /**
- * 敵のスーパークラス
+ * 敵
  * @author sigmal00
  */
-class Enemy2 extends Enemy
+class Gunner extends Enemy
 {
 	private var seq:Sequencer = new Sequencer(true);
 	private var bullets:List<Bullet>;
@@ -25,7 +26,7 @@ class Enemy2 extends Enemy
 		seq.wait(30);
 		seq.add(
 		{
-			BulletProducer.setBullet2(container.x, container.y, container.x-1, container.y, 3);
+			BulletProducer.setBullet1(container.x, container.y, container.x-1, container.y, 3);
 		});
 		seq.wait(120);
 	}

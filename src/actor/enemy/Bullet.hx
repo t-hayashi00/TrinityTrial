@@ -1,4 +1,4 @@
-package actor;
+package actor.enemy;
 import openfl.display.Sprite;
 import openfl.geom.Point;
 import openfl.display.Sprite;

@@ -1,4 +1,4 @@
-package actor;
+package actor.enemy;
 
 import openfl.display.DisplayObject;
 import openfl.display.Sprite;
@@ -14,6 +14,6 @@ class Enemy extends Actor
 	{
 		cr = 0xFF0000;
 		super(x, y, w, h);
-		ATK = 1;
+		ATK = 0;
 	}
 }

@@ -2,8 +2,6 @@ package actor;
 
 import openfl.display.Sprite;
 import openfl.geom.Point;
-import openfl.geom.Transform;
-import openfl.geom.Matrix;
 
 /**
  * 自機や敵などの基底クラス
@@ -13,8 +11,10 @@ import openfl.geom.Matrix;
 class Actor 
 {
 	public var container:Sprite = new Sprite();
+	public var hitBox:Sprite = new Sprite();
 	
 	private var v:Point = new Point(0, 0);
+	private var a:Float = 0;
 	private var t:Float = 0;
 	private var cr:UInt;
 	
@@ -36,17 +36,15 @@ class Actor
 	{
 		container.x = x;
 		container.y = y;
-		container.graphics.beginFill(cr,1);
-		container.graphics.drawRect(0, 0, w, h);
-		container.graphics.beginFill(0x000000,1.0);
-		divW = Math.floor((container.width-1) / Game.GRID_SIZE) + 2;
-		divH = Math.floor((container.height-1) / Game.GRID_SIZE) + 2;
+		container.addChild(hitBox);
+		hitBox.graphics.beginFill(cr,1);
+		hitBox.graphics.drawRect(0, 0, w, h);
+		divW = Math.floor((hitBox.width-1) / Game.GRID_SIZE) + 2;
+		divH = Math.floor((hitBox.height-1) / Game.GRID_SIZE) + 2;
 	}
 
 	public function update():Bool{
 		if (hitStop > 0){
-			container.x += (Math.random() - 0.5) * hitStop*0.5;
-			container.y += (Math.random() - 0.5) * hitStop*0.5;
 			hitStop--;
 			return true;
 		}
@@ -57,8 +55,9 @@ class Actor
 		}
 		invincible--;
 		
-		t += if (isLimitBreak()) 0.001 else 0.02;
-		v.y += t;
+		a = if (isLimitBreak()) 0.001 else 0.02;
+		t++;
+		v.y += a*t;
 		
 		if (isLimitBreak() || knockBack > 0) state.command = State.commands.FREE;
 		if (knockBack > 0) knockBack--;
@@ -77,12 +76,12 @@ class Actor
 		if(checkCommand(State.commands.UP)){
 			if(jumped > 0){
 				t = 0;
-				v.y = -4;
+				v.y = -4.5;
 			}
 			state.command = state.command&(~State.commands.UP);
 		}
 		
-		if (v.y > Game.MAX_SPEED) v.y -= t;
+		if (v.y > Game.MAX_SPEED) v.y -= a*t;
 		
 		hitTerrain();
 		
@@ -112,6 +111,10 @@ class Actor
 	
 	public function getVelocity():Point{
 		return v;
+	}	
+
+	public function getAirTime():Float{
+		return t;
 	}	
 	
 	public function hitAffect(e:Actor):Void{
@@ -144,7 +147,7 @@ class Actor
 		while (isBuried){
 			isBuried = false;
 			for (j in 0...divW){
-				var under:String = Game.stage.getIDByFloat(container.x, container.y + container.height);
+				var under:String = Game.stage.getIDByFloat(container.x, container.y + hitBox.height);
 				if (under != "0"){
 					container.y -= 0.1;
 					isBuried = true;
@@ -169,13 +172,13 @@ class Actor
 		var divV:Int = 8;
 		var tmp:Point = new Point(v.x / divV, v.y / divV);
 		var hitX:Bool = false;
-		var hitY:Bool = false;		
+		var hitY:Bool = false;
 		for (i in 0...divV){
 			if (!hitY){
 				container.y += tmp.y;
 				for(j in 0...divW){
-					var over:String = Game.stage.getIDByFloat(container.x + j * container.width/ (divW-1) , container.y);
-					var under:String = Game.stage.getIDByFloat(container.x + j * container.width / (divW - 1) , container.y + container.height);
+					var over:String = Game.stage.getIDByFloat(container.x + j * hitBox.width/ (divW-1) , container.y);
+					var under:String = Game.stage.getIDByFloat(container.x + j * hitBox.width / (divW - 1) , container.y + hitBox.height);
 					if (under == "-1"){
 						trace("dead");
 						HP = 0;
@@ -199,8 +202,8 @@ class Actor
 			if(!hitX){
 				container.x += tmp.x;
 				for(j in 0...divH){
-					var left:String = Game.stage.getIDByFloat(container.x , container.y + j * container.height / (divH - 1) );
-					var right:String = Game.stage.getIDByFloat(container.x + container.width , container.y + j * container.height / (divH-1) );
+					var left:String = Game.stage.getIDByFloat(container.x , container.y + j * hitBox.height / (divH - 1) );
+					var right:String = Game.stage.getIDByFloat(container.x + hitBox.width , container.y + j * hitBox.height / (divH-1) );
 					if (left != "0" || right != "0"){
 						container.x -= tmp.x;
 						v.x *= if (isLimitBreak()) -0.99 else -0.1;

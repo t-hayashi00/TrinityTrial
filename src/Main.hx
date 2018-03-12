@@ -1,11 +1,10 @@
-package ;
+package;
 
 import openfl.display.Sprite;
-import haxe.macro.Expr;
-using Sequencer;
+import openfl.Lib;
 
 /**
- * Main
+ * ...
  * @author sigmal00
  */
 class Main extends Sprite 
@@ -14,6 +13,7 @@ class Main extends Sprite
 	public function new() 
 	{
 		super();
-		game = new Game(this);
-	}	
+		game = new Game(this) ;
+	}
+
 }

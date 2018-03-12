@@ -1,4 +1,6 @@
 package actor;
+import openfl.Assets;
+import openfl.display.Bitmap;
 import openfl.geom.Point;
 import openfl.ui.Keyboard;
 import openfl.display.Sprite;
@@ -13,6 +15,7 @@ class PlayerManager
 	private var isExtincted:Bool = false;
 	private var shell:Actor = null;
 	private var aiming:Aiming = new Aiming();
+	private var nowLeader:Bitmap;
 	private var deadMan:List<Actor>;
 
 	public var subject:Point = new Point();
@@ -31,8 +34,10 @@ class PlayerManager
 			npc.add(p);
 		}
 		pc = npc.pop();
+		nowLeader = new Bitmap(Assets.getBitmapData("img/c_arrow.png"));
+		container.addChild(nowLeader);
 	}
-	
+
 	public function playerControl():Bool
 	{
 		if (!isExtincted)
@@ -45,37 +50,39 @@ class PlayerManager
 
 	private function pcControl():Bool
 	{
+		nowLeader.x = pc.container.x -2;
+		nowLeader.y = pc.container.y - 16;
 		if (Module.isKeyPressed(Keyboard.Q))
 		{
 			isExtincted = false;
 			generatePlayer(48, 48);
 		}
 		pc.state.command = State.commands.FREE;
-		if (Module.isKeyPressed(Keyboard.SHIFT))
+		if (Module.isKeyDoubleClick(Keyboard.SHIFT))
 		{
 			changeControl(false,false);
 		}
 		if (pc.state.act != State.actions.DEAD)
 		{
-			if (Module.isKeyPressed(Keyboard.A))
+			if (Module.getKeyHoldTime(Keyboard.SHIFT) == 30)
 			{
 				generatePlayer(pc.container.x, pc.container.y);
 			}
-			if (Module.isKeyPressed(Keyboard.S))
+			if (Module.isKeyPressed(Keyboard.A))
 			{
 				gather();
 			}
-			if (Module.isKeyPressed(Keyboard.D))
+			if (Module.isKeyPressed(Keyboard.S))
 			{
 				disband();
 			}
 			if (Module.isKeyDown(Keyboard.DOWN) && shell != null)
 			{
-				if(aiming.controlAng < 180)aiming.controlAng += 1.5;
+				if (aiming.controlAng < 180)aiming.controlAng += 1.5;
 			}
 			else if (Module.isKeyDown(Keyboard.UP) && shell != null)
 			{
-				if(aiming.controlAng > 0)aiming.controlAng -= 1.5;
+				if (aiming.controlAng > 0)aiming.controlAng -= 1.5;
 			}
 			if (Module.isKeyDown(Keyboard.LEFT))
 			{
@@ -101,7 +108,7 @@ class PlayerManager
 				if (Module.isKeyDoubleClick(Keyboard.RIGHT)) pc.state.dir = State.directions.RIGHT;
 				if (Module.isKeyDoubleClick(Keyboard.LEFT)) pc.state.dir = State.directions.LEFT;
 				if (!Module.isKeyDown(Keyboard.X)) throwing();
-				if (Module.isKeyDown(Keyboard.C)) cancelThrowing();
+				if (Module.isKeyDown(Keyboard.C)) cancelThrowing(shell.state.act = State.actions.TRAIL);
 			}
 		}
 		var isAlive = pc.update();
@@ -132,18 +139,27 @@ class PlayerManager
 			if (p.state.act == State.actions.TRAIL)
 			{
 				if (previous.container.y - p.container.y <= -24) p.state.command += State.commands.UP;
-				if (previous.container.x - p.container.x >= 16) p.state.command += State.commands.RIGHT;
-				if (previous.container.x - p.container.x <= -16) p.state.command += State.commands.LEFT;
+				if (previous.container.x - p.container.x >= 16)
+				{
+					p.state.command += State.commands.RIGHT;
+					p.state.dir = State.directions.RIGHT;
+				}
+				if (previous.container.x - p.container.x <= -16)
+				{
+					p.state.command += State.commands.LEFT;
+					p.state.dir = State.directions.LEFT;
+				}
 				previous = p;
 			}
 		}
-
 		if (shell != null)
 		{
 			aiming.update(pc.container.x, pc.container.y, pc.state.dir);
+			shell.addForce(new Point(0, 0), true);
 			shell.container.x = pc.container.x - 6 * pc.state.dir;
 			shell.container.y = pc.container.y - 8;
-			if (shell.state.act == State.actions.DEAD) cancelThrowing();
+			shell.state.dir = pc.state.dir;
+			if (shell.state.act == State.actions.DEAD) cancelThrowing(State.actions.DEAD);
 		}
 	}
 
@@ -180,6 +196,7 @@ class PlayerManager
 				if ((-20 < inside.x && inside.x < 20)&&(-20 < inside.y && inside.y < 20))
 				{
 					shell = p;
+					shell.state.act = State.actions.HOLD;
 					container.addChild(aiming.container);
 					break;
 				}
@@ -187,23 +204,20 @@ class PlayerManager
 		}
 		else
 		{
-			shell.container.x = pc.container.x;
-			shell.container.y = pc.container.y - 8;
-			shell.state.act = State.actions.WAIT;
 			var v:Point = new Point(aiming.container.x - shell.container.x, aiming.container.y - shell.container.y);
 			v.normalize(Game.FC_VELOCITY + 1);
 			v.add(pc.getVelocity());
 			shell.addForce(v, true);
 			shell.shellCount = 30;
-			shell = null;
-			container.removeChild(aiming.container);
+			cancelThrowing(State.actions.WAIT);
 		}
 	}
 
-	private function cancelThrowing()
+	private function cancelThrowing(action:Int)
 	{
 		shell.container.x = pc.container.x;
 		shell.container.y = pc.container.y - 8;
+		shell.state.act = action;
 		shell = null;
 		container.removeChild(aiming.container);
 	}
@@ -238,7 +252,7 @@ class PlayerManager
 			}
 			return;
 		}
-		if (shell != null)cancelThrowing();
+		if (shell != null)cancelThrowing(State.actions.TRAIL);
 		if (!dead)
 		{
 			pc.state.act = State.actions.WAIT;
@@ -257,10 +271,7 @@ class PlayerManager
 		{
 			var p = it.next();
 			p.state.act = State.actions.WAIT;
-			if (pc.inRange(p.container.x, p.container.y, 32))
-			{
-				p.state.act = State.actions.TRAIL;
-			}
+			if (pc.inRange(p.container.x, p.container.y, 32)) p.state.act = State.actions.TRAIL;
 		}
 	}
 

@@ -1,4 +1,5 @@
 package actor;
+import actor.enemy.*;
 import openfl.geom.Point;
 import openfl.display.Sprite;
 
@@ -20,13 +21,11 @@ class ActorMediator
 		BulletProducer.setup(bullets, container);
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
-				switch(Game.stage.map[y][x]){
-				case "11":
-					var e = new Enemy2(Game.GRID_SIZE*x,Game.GRID_SIZE*y, bullets);
+				var e = EnemyFactory.getEnemy(Std.parseInt(Game.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y, bullets);
+				if(e != null){
 					container.addChild(e.container);
 					enemies.add(e);
 					Game.stage.map[y][x] = "0";
-				default:
 				}
 			}
 		}
@@ -60,7 +59,7 @@ class ActorMediator
 			var p:Actor = pm.pc;
 			var it:Iterator<Actor> = pm.npc.iterator();
 			while(true){
-				if ((!b.dead) && b.container.hitTestObject(p.container)){
+				if ((!b.dead) && b.container.hitTestObject(p.hitBox)){
 					b.hitAffect(p);
 				}
 				if (!it.hasNext()) break;
@@ -83,7 +82,7 @@ class ActorMediator
 			var p:Actor = pm.pc;
 			var pIt:Iterator<Actor> = pm.npc.iterator();
 			while(!(e.invincible > 0 || e.state.act == State.actions.DEAD)){
-				if (e.container.hitTestObject(p.container)){
+				if (e.hitBox.hitTestObject(p.hitBox)){
 					p.hitAffect(e);
 					e.hitAffect(p);
 				}

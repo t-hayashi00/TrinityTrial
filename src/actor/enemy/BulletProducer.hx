@@ -1,4 +1,5 @@
-package actor;
+package actor.enemy;
+import actor.enemy.Bullet;
 import openfl.display.Sprite;
 import openfl.geom.Point;
 
@@ -31,14 +32,14 @@ class BulletProducer
 		var v:Point = new Point (toX - fromX, toY - fromY);
 		v.normalize(thrust);
 		var v2 = Module.rotateVector2D(v, -10);
-		var b:Bullet = new Bullet(fromX, fromY+3, v2.x, v2.y, 0, 0, 1, 180, true, false);
+		var b:Bullet = new Bullet(fromX, fromY+3, v2.x, v2.y, 0, 0, 1, 180, false, false);
 		bullets.add(b);
 		container.addChild(b.container);
-		var b:Bullet = new Bullet(fromX, fromY+3, v.x, v.y, 0, 0, 1, 180, true, false);
+		var b:Bullet = new Bullet(fromX, fromY+3, v.x, v.y, 0, 0, 1, 180, false, false);
 		bullets.add(b);
 		container.addChild(b.container);
 		v2 = Module.rotateVector2D(v, 10);
-		var b:Bullet = new Bullet(fromX, fromY+3, v2.x, v2.y, 0, 0, 1, 180, true, false);
+		var b:Bullet = new Bullet(fromX, fromY+3, v2.x, v2.y, 0, 0, 1, 180, false, false);
 		bullets.add(b);
 		container.addChild(b.container);
 	}	
