@@ -26,7 +26,7 @@ class Gunner extends Enemy
 		seq.wait(30);
 		seq.add(
 		{
-			BulletProducer.setBullet1(container.x, container.y, container.x-1, container.y, 3);
+			ActorMediator.bulletGenerator.addBullet(1, container.x, container.y, container.x-1, container.y, 3);
 		});
 		seq.wait(120);
 	}

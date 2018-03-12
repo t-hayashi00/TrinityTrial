@@ -14,11 +14,11 @@ class ActorMediator
 	private var enemies:List<Actor> = new List<Actor>();
 	private var deadMan:List<Actor> = new List<Actor>();
 	private var bullets:List<Bullet> = new List<Bullet>();
-
+	public static var bulletGenerator:BulletGenerator = new BulletGenerator();
 	
 	public function new() 
 	{
-		BulletProducer.setup(bullets, container);
+		bulletGenerator.setup(bullets, container);
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
 				var e = EnemyFactory.getEnemy(Std.parseInt(Game.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y, bullets);
