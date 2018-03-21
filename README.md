@@ -6,7 +6,8 @@
 
 主人公は増殖できるので誰かが欠けても全滅しない限り冒険は続く。仲間の屍を超えていきながらゴールを目指そう。
 
-プレイはこちらから→ https://t-hayashi00.github.io/TrinityTrialOnHTML5/  
+プレイはこちらから→ https://t-hayashi00.github.io/TrinityTrial/  
+※動作しない場合はリポジトリ内の「実行用ファイル.zip」をDLしてindex.htmlから実行してください。
 
 ## 操作方法
 左右キー 移動
