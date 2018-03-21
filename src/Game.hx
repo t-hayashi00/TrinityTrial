@@ -36,10 +36,8 @@ class Game
 		width = panorama.width;
 		height = panorama.height;
 		game.addChild(panorama);
-		game.stage.addEventListener(Event.ENTER_FRAME, update);
 		game.stage.frameRate = 60;
 		game.scrollRect = new Rectangle(0, 0, panorama.width, panorama.height);
-		
 		game.addChild(field);
 		
 		stage = StageFactory.generate(0, 0);
@@ -49,6 +47,8 @@ class Game
 		field.addChild(actorMediator.container);
 		field.scaleX = 2.0;
 		field.scaleY = 2.0;
+		
+		game.stage.addEventListener(Event.ENTER_FRAME, update);
 	}
 
 	private function update(event:Event):Void
