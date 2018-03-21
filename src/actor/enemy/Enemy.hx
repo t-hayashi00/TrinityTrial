@@ -1,7 +1,4 @@
 package actor.enemy;
-
-import openfl.display.DisplayObject;
-import openfl.display.Sprite;
 import openfl.geom.Point;
 
 /**
@@ -10,10 +7,22 @@ import openfl.geom.Point;
  */
 class Enemy extends Actor
 {
-	public function new(x:Float, y:Float, w:Float, h:Float) 
+	public function new(x:Float, y:Float, w:Float, h:Float)
 	{
-		cr = 0xFF0000;
 		super(x, y, w, h);
 		ATK = 0;
+	}
+
+	public override function hitAffect(e:Actor):Void
+	{
+		var f = new Point(e.container.x - container.x, e.container.y - container.y);
+		var v = e.getVelocity();
+		f.normalize(3);
+		f.add(v);
+		e.addForce(f, isLimitBreak());
+		e.knockBack = 6;
+		e.hitStop = 6;
+		e.invincible = 30;
+		e.HP -= if (!isLimitBreak()) ATK else ATK + 1;
 	}
 }

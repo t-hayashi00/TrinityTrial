@@ -2,6 +2,7 @@ package actor;
 
 import spritesheet.Hero;
 import spritesheet.SpritesheetManager;
+import openfl.geom.Point;
 
 /**
  * 自機を表すクラス
@@ -25,5 +26,18 @@ class Player extends Actor
 	{
 		spSheet.update();
 		return super.update();	
+	}
+	
+	public override function hitAffect(e:Actor):Void
+	{
+		var f = new Point(e.container.x - container.x, e.container.y - container.y);
+		var v = e.getVelocity();
+		f.normalize(3);
+		f.add(v);
+		e.addForce(f, isLimitBreak());
+		e.knockBack = 6;
+		e.hitStop = 6;
+		e.invincible = 30;
+		e.HP -= if (!isLimitBreak()) ATK else ATK + 1;
 	}
 }

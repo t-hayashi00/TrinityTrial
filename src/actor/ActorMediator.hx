@@ -15,16 +15,15 @@ class ActorMediator
 	private var deadMan:List<Actor> = new List<Actor>();
 	private var bullets:List<Bullet> = new List<Bullet>();
 	public static var bulletGenerator:BulletGenerator = new BulletGenerator();
+	public static var enemyGenerator:EnemyGenerator = new EnemyGenerator();
 	
 	public function new() 
 	{
 		bulletGenerator.setup(bullets, container);
+		enemyGenerator.setup(enemies, bullets, container);
 		for(y in 0...Game.stage.getHeight()){
 			for(x in 0...Game.stage.getWidth()){
-				var e = EnemyFactory.getEnemy(Std.parseInt(Game.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y, bullets);
-				if(e != null){
-					container.addChild(e.container);
-					enemies.add(e);
+				if (enemyGenerator.setEnemy(Std.parseInt(Game.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y)){
 					Game.stage.map[y][x] = "0";
 				}
 			}
