@@ -1,7 +1,9 @@
-package actor;
-import actor.enemy.*;
+package scene.ingame.actor;
 import openfl.geom.Point;
 import openfl.display.Sprite;
+import scene.ingame.actor.enemy.Bullet;
+import scene.ingame.actor.enemy.BulletGenerator;
+import scene.ingame.actor.enemy.EnemyGenerator;
 
 /**
  * Actorの操作を行うクラス
@@ -21,20 +23,20 @@ class ActorMediator
 	{
 		bulletGenerator.setup(bullets, container);
 		enemyGenerator.setup(enemies, bullets, container);
-		for(y in 0...Game.stage.getHeight()){
-			for(x in 0...Game.stage.getWidth()){
-				if (enemyGenerator.setEnemy(Std.parseInt(Game.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y)){
-					Game.stage.map[y][x] = "0";
+		for(y in 0...InGame.stage.getHeight()){
+			for(x in 0...InGame.stage.getWidth()){
+				if (enemyGenerator.setEnemy(Std.parseInt(InGame.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y)){
+					InGame.stage.map[y][x] = "0";
 				}
 			}
 		}
 		pm = new PlayerManager(container, deadMan);
 	}
 	
-	public function update(){
+	public function update():Bool{
 		enemyControl();
 		bulletControl();
-		var end = pm.playerControl();
+		var isEnd = pm.playerControl();
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
@@ -43,6 +45,7 @@ class ActorMediator
 				deadMan.remove(d);
 			}
 		}
+		return isEnd;
 	}
 	
 	public function getSubject():Point{

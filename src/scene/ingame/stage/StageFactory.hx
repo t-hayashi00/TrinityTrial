@@ -1,4 +1,4 @@
-package stage;
+package scene.ingame.stage;
 
 /**
  * ステージの生成を行うクラス

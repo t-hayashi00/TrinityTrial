@@ -1,4 +1,4 @@
-package actor;
+package scene.ingame.actor;
 
 /**
  * キャラクターの状態を表すクラス

@@ -1,5 +1,6 @@
-package actor.enemy;
+package scene.ingame.actor.enemy;
 import openfl.geom.Point;
+import scene.ingame.actor.Actor;
 
 /**
  * 敵のスーパークラス

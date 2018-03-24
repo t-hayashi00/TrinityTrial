@@ -1,7 +1,7 @@
-package actor;
+package scene.ingame.actor;
 
-import spritesheet.Hero;
-import spritesheet.SpritesheetManager;
+import scene.ingame.spritesheet.Hero;
+import scene.ingame.spritesheet.SpritesheetManager;
 import openfl.geom.Point;
 
 /**

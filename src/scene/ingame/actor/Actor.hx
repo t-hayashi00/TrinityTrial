@@ -1,8 +1,7 @@
-package actor;
+package scene.ingame.actor;
 
 import openfl.display.Sprite;
 import openfl.geom.Point;
-
 /**
  * 自機や敵などの基底クラス
  * 地形や加わっている力に沿って動作する
@@ -159,7 +158,7 @@ class Actor
 			isBuried = false;
 			for (j in 0...divW)
 			{
-				var under:String = Game.stage.getIDByFloat(container.x, container.y + hitBox.height);
+				var under:String = InGame.stage.getIDByFloat(container.x, container.y + hitBox.height);
 				if (under != "0")
 				{
 					container.y -= 0.1;
@@ -175,7 +174,7 @@ class Actor
 			isBuried = false;
 			for (j in 0...divW)
 			{
-				var over:String = Game.stage.getIDByFloat(container.x, container.y);
+				var over:String = InGame.stage.getIDByFloat(container.x, container.y);
 				if (over != "0")
 				{
 					container.y += 0.2;
@@ -196,8 +195,8 @@ class Actor
 				container.y += tmp.y;
 				for (j in 0...divW)
 				{
-					var over:String = Game.stage.getIDByFloat(container.x + j * hitBox.width/ (divW-1), container.y);
-					var under:String = Game.stage.getIDByFloat(container.x + j * hitBox.width / (divW - 1), container.y + hitBox.height);
+					var over:String = InGame.stage.getIDByFloat(container.x + j * hitBox.width/ (divW-1), container.y);
+					var under:String = InGame.stage.getIDByFloat(container.x + j * hitBox.width / (divW - 1), container.y + hitBox.height);
 					if (under == "-1")
 					{
 						HP = 0;
@@ -227,8 +226,8 @@ class Actor
 				container.x += tmp.x;
 				for (j in 0...divH)
 				{
-					var left:String = Game.stage.getIDByFloat(container.x, container.y + j * hitBox.height / (divH - 1) );
-					var right:String = Game.stage.getIDByFloat(container.x + hitBox.width, container.y + j * hitBox.height / (divH-1) );
+					var left:String = InGame.stage.getIDByFloat(container.x, container.y + j * hitBox.height / (divH - 1) );
+					var right:String = InGame.stage.getIDByFloat(container.x + hitBox.width, container.y + j * hitBox.height / (divH-1) );
 					if (left != "0" || right != "0")
 					{
 						container.x -= tmp.x;

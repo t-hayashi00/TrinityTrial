@@ -1,4 +1,4 @@
-package actor;
+package scene.ingame.actor;
 import openfl.Assets;
 import openfl.display.Bitmap;
 import openfl.geom.Point;
@@ -26,7 +26,7 @@ class PlayerManager
 	{
 		this.deadMan = deadMan;
 		container = parent;
-		var pos = Game.stage.getPlayerPos();
+		var pos = InGame.stage.getPlayerPos();
 		for (i in 0...3)
 		{
 			var p = new Player(pos.x + 16*(i-1), pos.y, 12, 16);
@@ -170,17 +170,17 @@ class PlayerManager
 		{
 			subject.x = (Game.width/2) / container.parent.scaleX;
 		}
-		if (subject.x > (Game.stage.getWidth()*16) - (Game.width/2 / container.parent.scaleX))
+		if (subject.x > (InGame.stage.getWidth()*16) - (Game.width/2 / container.parent.scaleX))
 		{
-			subject.x = (Game.stage.getWidth()*16) - (Game.width/2 / container.parent.scaleX);
+			subject.x = (InGame.stage.getWidth()*16) - (Game.width/2 / container.parent.scaleX);
 		}
 		if (subject.y < Game.height/2 / container.parent.scaleY)
 		{
 			subject.y = Game.height/2 / container.parent.scaleY;
 		}
-		if (subject.y > (Game.stage.getHeight()*16) - (Game.height/2 / container.parent.scaleY))
+		if (subject.y > (InGame.stage.getHeight()*16) - (Game.height/2 / container.parent.scaleY))
 		{
-			subject.y = (Game.stage.getHeight()*16) - (Game.height/2 / container.parent.scaleY);
+			subject.y = (InGame.stage.getHeight()*16) - (Game.height/2 / container.parent.scaleY);
 		}
 	}
 

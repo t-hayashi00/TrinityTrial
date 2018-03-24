@@ -15,6 +15,13 @@ class Module
 	static var keyHoldBuffer:Array<Int> = new Array<Int>();
 	static var keyDoubleClick:Array<Int> = new Array<Int>();
 	static var prePressed:Bool = false;
+
+	static public function setup()
+	{
+		Game.display.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+		Game.display.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+	}
+
 	static public function isKeyDown(keyCode:UInt):Bool
 	{
 		return keyInputBuffer[keyCode];
@@ -63,13 +70,7 @@ class Module
 		mat.rotate(Math.PI / 180 * degree);
 		return mat.deltaTransformPoint(v);
 	}
-
-	static public function setup()
-	{
-		Game.display.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
-		Game.display.addEventListener(KeyboardEvent.KEY_UP, keyUp);
-	}
-
+	
 	static private function keyDown(e:KeyboardEvent):Void
 	{
 		try{

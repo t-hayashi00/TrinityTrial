@@ -1,7 +1,9 @@
-package actor.enemy;
+package scene.ingame.actor.enemy;
 import openfl.display.Sprite;
 import openfl.geom.Point;
 import openfl.display.Sprite;
+import scene.InGame;
+import scene.ingame.actor.Actor;
 
 /**
  * 敵弾を表すクラス
@@ -51,7 +53,7 @@ class Bullet
 			v.x += a.x * t * 0.01;
 			v.y += a.y * t * 0.01;
 		}
-		switch(Game.stage.getIDByFloat(container.x + v.x, container.y)){
+		switch(InGame.stage.getIDByFloat(container.x + v.x, container.y)){
 		case "0":
 		default:
 			if(reflect){
@@ -61,7 +63,7 @@ class Bullet
 				dead = true;
 			}
 		}
-		switch(Game.stage.getIDByFloat(container.x, container.y + v.y)){
+		switch(InGame.stage.getIDByFloat(container.x, container.y + v.y)){
 		case "0":
 		default:
 			if(reflect){

@@ -1,5 +1,5 @@
-package actor.enemy;
-import actor.enemy.Bullet;
+package scene.ingame.actor.enemy;
+import scene.ingame.actor.enemy.Bullet;
 import openfl.display.Sprite;
 import openfl.geom.Point;
 

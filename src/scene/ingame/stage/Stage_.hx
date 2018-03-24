@@ -1,4 +1,4 @@
-package stage;
+package scene.ingame.stage;
 
 import openfl.geom.Rectangle;
 import openfl.geom.Point;

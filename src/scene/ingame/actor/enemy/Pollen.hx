@@ -1,4 +1,4 @@
-package actor.enemy;
+package scene.ingame.actor.enemy;
 
 /**
  * ...

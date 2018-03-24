@@ -1,5 +1,6 @@
-package actor.enemy;
+package scene.ingame.actor.enemy;
 import openfl.display.Sprite;
+import scene.ingame.actor.Actor;
 
 /**
  * ...

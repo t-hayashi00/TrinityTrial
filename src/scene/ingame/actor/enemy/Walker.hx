@@ -1,4 +1,5 @@
-package actor.enemy;
+package scene.ingame.actor.enemy;
+import scene.ingame.actor.State;
 using Sequencer;
 
 /**

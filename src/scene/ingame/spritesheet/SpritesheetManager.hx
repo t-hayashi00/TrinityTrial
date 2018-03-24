@@ -1,5 +1,5 @@
-package spritesheet;
-import actor.Actor;
+package scene.ingame.spritesheet;
+import scene.ingame.actor.Actor;
 import openfl.display.Bitmap;
 
 /**

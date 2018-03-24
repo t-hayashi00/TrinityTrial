@@ -1,7 +1,7 @@
-package spritesheet;
+package scene.ingame.spritesheet;
 
-import actor.Actor;
-import actor.State;
+import scene.ingame.actor.Actor;
+import scene.ingame.actor.State;
 import openfl.display.BitmapData;
 import openfl.display.Bitmap;
 import openfl.geom.Rectangle;
@@ -34,7 +34,6 @@ class Hero extends SpritesheetManager
 	public override function update():Void
 	{
 		if (target.hitStop > 0){
-			trace("hitstop");
 			spritesheet.x += (Math.random() - 0.5) * target.hitStop * 0.5;
 			spritesheet.y += (Math.random() - 0.5) * target.hitStop * 0.5;
 		}else{

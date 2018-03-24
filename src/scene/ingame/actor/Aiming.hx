@@ -1,4 +1,4 @@
-package actor;
+package scene.ingame.actor;
 
 import openfl.Assets;
 import openfl.display.Bitmap;
