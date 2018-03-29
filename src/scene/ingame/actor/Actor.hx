@@ -159,7 +159,7 @@ class Actor
 			for (j in 0...divW)
 			{
 				var under:String = InGame.stage.getIDByFloat(container.x, container.y + hitBox.height);
-				if (under != "0")
+				if (under == "1")
 				{
 					container.y -= 0.1;
 					isBuried = true;
@@ -175,7 +175,7 @@ class Actor
 			for (j in 0...divW)
 			{
 				var over:String = InGame.stage.getIDByFloat(container.x, container.y);
-				if (over != "0")
+				if (over == "1")
 				{
 					container.y += 0.2;
 					isBuried = true;
@@ -197,12 +197,21 @@ class Actor
 				{
 					var over:String = InGame.stage.getIDByFloat(container.x + j * hitBox.width/ (divW-1), container.y);
 					var under:String = InGame.stage.getIDByFloat(container.x + j * hitBox.width / (divW - 1), container.y + hitBox.height);
+					if (tmp.y > 0 && under == "2" && !checkCommand(State.commands.DOWN) && (container.y + hitBox.height) % 16 < 0.5){
+						jumped = 2;
+						container.y -= tmp.y;
+						v.x *= if (isLimitBreak())0.999 else 0.8;
+						v.y *= if (isLimitBreak()) -0.99 else 0;
+						t = 0;
+						hitY = true;
+						break;
+					}
 					if (under == "-1")
 					{
 						HP = 0;
 						return;
 					}
-					if (under != "0")
+					if (under == "1")
 					{
 						jumped = 2;
 					}
@@ -210,7 +219,7 @@ class Actor
 					{
 						jumped = -1;
 					}
-					if (over != "0" || under != "0")
+					if (over == "1" || under == "1")
 					{
 						container.y -= tmp.y;
 						v.x *= if (isLimitBreak())0.999 else 0.8;
@@ -228,7 +237,7 @@ class Actor
 				{
 					var left:String = InGame.stage.getIDByFloat(container.x, container.y + j * hitBox.height / (divH - 1) );
 					var right:String = InGame.stage.getIDByFloat(container.x + hitBox.width, container.y + j * hitBox.height / (divH-1) );
-					if (left != "0" || right != "0")
+					if (left == "1" || right == "1")
 					{
 						container.x -= tmp.x;
 						v.x *= if (isLimitBreak()) -0.99 else -0.1;

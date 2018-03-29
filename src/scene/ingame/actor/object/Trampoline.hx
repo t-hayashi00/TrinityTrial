@@ -1,4 +1,4 @@
-package scene.ingame.actor.enemy;
+package scene.ingame.actor.object;
 import openfl.geom.Point;
 import scene.ingame.actor.Actor;
 
@@ -6,22 +6,12 @@ import scene.ingame.actor.Actor;
  * ...
  * @author sigmal00
  */
-class Trampoline extends Enemy
+class Trampoline extends Object
 {
 	public override function new(x:Float, y:Float)
 	{
 		cr = 0xEEEE00;
 		super(x, y, 16, 16);
-		ATK = 0;
-	}
-
-	public override function update():Bool
-	{
-		knockBack = 0;
-		invincible = 0;
-		shellCount = 0;
-		hitStop = 0;
-		return true;
 	}
 
 	public override function hitAffect(e:Actor):Void

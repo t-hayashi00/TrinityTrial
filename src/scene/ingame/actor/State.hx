@@ -10,7 +10,8 @@ class State
 		FREE:0x0,
 		RIGHT:0x1,
 		LEFT:0x2,
-		UP:0x8
+		UP:0x8,
+		DOWN:0x10
 	};
 	static public var actions = {
 		TRAIL:0,//NPC専用ステート

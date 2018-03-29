@@ -12,9 +12,9 @@ using Sequencer;
 class Bloomer extends Enemy
 {
 	private var seq:Sequencer = new Sequencer(true);
-	private var enemies:List<Actor>;
+	private var enemies:List<Dynamic>;
 
-	public override function new(x:Float, y:Float, enemies:List<Actor>)
+	public override function new(x:Float, y:Float, enemies:List<Dynamic>)
 	{
 		cr = 0xFF0000;
 		super(x, y, 16, 16);

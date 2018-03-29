@@ -4,6 +4,7 @@ import openfl.display.Sprite;
 import scene.ingame.actor.enemy.Bullet;
 import scene.ingame.actor.enemy.BulletGenerator;
 import scene.ingame.actor.enemy.EnemyGenerator;
+import scene.ingame.actor.object.ObjectGenerator;
 
 /**
  * Actorの操作を行うクラス
@@ -13,30 +14,31 @@ class ActorMediator
 {
 	public var container:Sprite = new Sprite();
 	private var pm:PlayerManager;
-	private var enemies:List<Actor> = new List<Actor>();
+	private var actors:List<Actor> = new List<Actor>();
 	private var deadMan:List<Actor> = new List<Actor>();
 	private var bullets:List<Bullet> = new List<Bullet>();
 	public static var bulletGenerator:BulletGenerator = new BulletGenerator();
+	public static var objectGenerator:ObjectGenerator = new ObjectGenerator();
 	public static var enemyGenerator:EnemyGenerator = new EnemyGenerator();
 	
-	public function new() 
+	public function new(party:Int) 
 	{
 		bulletGenerator.setup(bullets, container);
-		enemyGenerator.setup(enemies, bullets, container);
+		enemyGenerator.setup(actors, container);
+		objectGenerator.setup(actors, container);
 		for(y in 0...InGame.stage.getHeight()){
 			for(x in 0...InGame.stage.getWidth()){
-				if (enemyGenerator.setEnemy(Std.parseInt(InGame.stage.map[y][x]), Game.GRID_SIZE * x, Game.GRID_SIZE * y)){
-					InGame.stage.map[y][x] = "0";
-				}
+				enemyGenerator.set(Std.parseInt(InGame.stage.getID(x, y)), Game.GRID_SIZE * x, Game.GRID_SIZE * y);
+				objectGenerator.set(Std.parseInt(InGame.stage.getID(x, y)), Game.GRID_SIZE * x, Game.GRID_SIZE * y);
 			}
 		}
-		pm = new PlayerManager(container, deadMan);
+		pm = new PlayerManager(container, deadMan, party);
 	}
 	
 	public function update():Bool{
-		enemyControl();
-		bulletControl();
-		var isEnd = pm.playerControl();
+		actorUpdate();
+		bulletUpdate();
+		var isEnd = pm.playerUpdate();
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
@@ -52,7 +54,7 @@ class ActorMediator
 		return pm.subject;
 	}
 
-	private function bulletControl(){
+	private function bulletUpdate(){
 		var it:Iterator<Bullet> = bullets.iterator();
 		while (it.hasNext()){
 			var b = it.next();
@@ -75,10 +77,10 @@ class ActorMediator
 		}
 	}
 	
-	private function enemyControl(){
-		var eIt:Iterator<Actor> = enemies.iterator();
-		while (eIt.hasNext()){
-			var e = eIt.next();
+	private function actorUpdate(){
+		var aIt:Iterator<Actor> = actors.iterator();
+		while (aIt.hasNext()){
+			var e = aIt.next();
 			if (Math.abs(e.container.x - pm.subject.x) > Game.width/2) continue;
 			
 			var p:Actor = pm.pc;
@@ -95,9 +97,8 @@ class ActorMediator
 			e.update();
 			if(e.state.act == State.actions.DEAD){
 				deadMan.add(e);
-				enemies.remove(e);
+				actors.remove(e);
 			}
 		}
-	}
-	
+	}	
 }

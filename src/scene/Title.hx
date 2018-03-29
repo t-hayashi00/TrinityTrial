@@ -14,27 +14,24 @@ using Sequencer;
  * ...
  * @author sigmal00
  */
-class Title extends scene.Scene
+class Title extends Scene
 {
 	private var seq:Sequencer = new Sequencer(false);
 
 	private var title:Bitmap = new Bitmap(Assets.getBitmapData("img/title.png"));
-	private var dispalyEffect:Sprite = new Sprite();
 
 	public function new(game:Sprite)
 	{
 		this.game = game;
 		trace(System.totalMemory);
-		dispalyEffect.graphics.beginFill(0xFFFFFF, 1.0);
-		dispalyEffect.graphics.drawRect(0, 0, Game.width, Game.height);
 		title.scaleX = 1.05;
 		title.scaleY = 1.05;
 		seq.wait(30);
+		seq.add(Game.showScreen(15));
 		for (i in 0...15)
 		{
 			seq.add(
 			{
-				dispalyEffect.alpha -= 1/15;
 				title.scaleX -= 0.05/15;
 				title.scaleY -= 0.05 / 15;
 			});
@@ -48,7 +45,6 @@ class Title extends scene.Scene
 		tf.y = Game.height / 2 + 100;
 		game.addChild(title);
 		game.addChild(tf);
-		game.addChild(dispalyEffect);
 	}
 
 	var result:Scene = this;
@@ -57,16 +53,17 @@ class Title extends scene.Scene
 		if (!seq.run())return this;
 		if (Module.isKeyPressed(Keyboard.Z))
 		{
-			for (i in 0...15)
-			{
-				seq.add(dispalyEffect.alpha += 1/15);
-				seq.wait(1);
-			}
+			seq.add(Game.hideScreen(5));
+			seq.wait(5);
 			seq.add(
 			{
 				teardown();
-				result = new InGame(game, 0, 0);
+				var so:SharedObject = SharedObject.getLocal("saveData");
+				if (so.data.stage == null) so.data.stage = 1;
+				if (so.data.party == null) so.data.party = 1;
+				result = new InGame(game, so.data.stage, 1, so.data.party);
 			});
+			seq.wait(5);
 		}
 		return result;
 	}

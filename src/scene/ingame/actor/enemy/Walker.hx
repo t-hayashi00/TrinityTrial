@@ -11,12 +11,11 @@ class Walker extends Enemy
 	private var seq:Sequencer = new Sequencer(true);
 	private var bullets:List<Bullet>;
 	
-	public override function new(x:Float, y:Float, bullets:List<Bullet>) 
+	public override function new(x:Float, y:Float) 
 	{
 		cr = 0xFF0000;
 		super(x, y, 12, 16);
 		ATK = 1;
-		this.bullets = bullets;
 		seq.add(state.command = State.commands.LEFT);
 		seq.wait(60);
 		seq.add(state.command = State.commands.FREE);

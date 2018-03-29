@@ -18,6 +18,7 @@ class Player extends Actor
 		cr = 0x0000FF;
 		super(x, y, w, h);
 		spSheet = new Hero(this);
+		hitBox.alpha = 0;
 		HP = 1;
 		ATK = 0;
 	}

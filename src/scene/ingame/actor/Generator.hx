@@ -1,0 +1,31 @@
+package scene.ingame.actor;
+import openfl.display.Sprite;
+
+/**
+ * Generatorの基底クラス
+ * @author sigmal00
+ */
+class Generator 
+{
+	private var target:List<Dynamic>;
+	private var container:Sprite;
+
+	public function new() 
+	{
+	}
+	
+	public function setup(target:List<Dynamic>, container:Sprite)
+	{
+		this.target = target;
+		this.container = container;
+	}
+	
+	private function add(e:Dynamic):Bool
+	{
+		if (e == null) return false;
+		container.addChild(e.container);
+		target.add(e);
+		return true;
+	}
+	
+}

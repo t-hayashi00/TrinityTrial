@@ -11,6 +11,8 @@ import openfl.display.Sprite;
  */
 class PlayerManager
 {
+	public static var pcPos:Point = new Point();
+	
 	private var container:Sprite;
 	private var isExtincted:Bool = false;
 	private var shell:Actor = null;
@@ -22,12 +24,12 @@ class PlayerManager
 	public var pc:Actor;
 	public var npc:List<Actor> = new List<Actor>();
 
-	public function new(parent:Sprite, deadMan:List<Actor>)
+	public function new(parent:Sprite, deadMan:List<Actor>, party:Int)
 	{
 		this.deadMan = deadMan;
 		container = parent;
 		var pos = InGame.stage.getPlayerPos();
-		for (i in 0...3)
+		for (i in 0...party)
 		{
 			var p = new Player(pos.x + 16*(i-1), pos.y, 12, 16);
 			container.addChild(p.container);
@@ -38,8 +40,9 @@ class PlayerManager
 		container.addChild(nowLeader);
 	}
 
-	public function playerControl():Bool
+	public function playerUpdate():Bool
 	{
+		if (pc != null) InGame.party = 1 + npc.length;
 		if (!isExtincted)
 		{
 			if (pcControl())subjectUpdate();
@@ -50,6 +53,8 @@ class PlayerManager
 
 	private function pcControl():Bool
 	{
+		pcPos.x = pc.container.x + pc.hitBox.width/2;
+		pcPos.y = pc.container.y + pc.hitBox.height/2;
 		nowLeader.x = pc.container.x -2;
 		nowLeader.y = pc.container.y - 16;
 		if (Module.isKeyPressed(Keyboard.Q))
@@ -93,6 +98,10 @@ class PlayerManager
 			{
 				pc.state.command += State.commands.RIGHT;
 				if (shell == null) pc.state.dir = State.directions.RIGHT;
+			}
+			if (Module.isKeyDown(Keyboard.DOWN))
+			{
+				pc.state.command += State.commands.DOWN;
 			}
 			if (Module.isKeyPressed(Keyboard.Z))
 			{
@@ -139,6 +148,7 @@ class PlayerManager
 			if (p.state.act == State.actions.TRAIL)
 			{
 				if (previous.container.y - p.container.y <= -24) p.state.command += State.commands.UP;
+				if (previous.container.y - p.container.y > 16) p.state.command += State.commands.DOWN;
 				if (previous.container.x - p.container.x >= 16)
 				{
 					p.state.command += State.commands.RIGHT;

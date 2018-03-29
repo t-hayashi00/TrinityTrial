@@ -11,14 +11,12 @@ using Sequencer;
 class Gunner extends Enemy
 {
 	private var seq:Sequencer = new Sequencer(true);
-	private var bullets:List<Bullet>;
 	
-	public override function new(x:Float, y:Float, bullets:List<Bullet>) 
+	public override function new(x:Float, y:Float) 
 	{
 		cr = 0xFF0000;
 		super(x, y, 12, 16);
 		ATK = 1;
-		this.bullets = bullets;
 		seq.add(
 		{
 			state.command = State.commands.FREE;
@@ -27,7 +25,7 @@ class Gunner extends Enemy
 		seq.wait(30);
 		seq.add(
 		{
-			ActorMediator.bulletGenerator.addBullet(1, container.x, container.y, container.x-1, container.y, 3);
+			var result = ActorMediator.bulletGenerator.set(1, container.x, container.y, container.x - 1, container.y, 3);
 		});
 		seq.wait(120);
 	}

@@ -39,6 +39,20 @@ class Sequencer
 		index++;
 		functions.push([]);
 	}
+	
+	public function isEmpty():Bool
+	{
+		return runningIndex == functions.length - 1;
+	}
+	
+	public function clear()
+	{
+		functions = [[]];
+		waitTerms = [];
+		waitingCount = 0;
+		index = 0;
+		runningIndex = 0;
+	}
 
 	// 毎フレーム呼び出される場所で呼び出す
 	public function run():Bool

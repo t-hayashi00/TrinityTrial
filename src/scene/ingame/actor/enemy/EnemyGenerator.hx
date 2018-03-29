@@ -1,50 +1,28 @@
 package scene.ingame.actor.enemy;
 import openfl.display.Sprite;
-import scene.ingame.actor.Actor;
+import scene.ingame.actor.Generator;
 
 /**
  * ...
  * @author sigmal00
  */
-class EnemyGenerator 
+class EnemyGenerator extends Generator
 {
-	private var enemies:List<Actor>;
-	private var bullets:List<Bullet>;
-	private var container:Sprite;
-	
-	public function new()
-	{
-	} 
-	
-	public function setup(enemies:List<Actor>, bullets:List<Bullet>, container:Sprite)
-	{
-		this.enemies = enemies;
-		this.bullets = bullets;
-		this.container = container;
-	}
-	
-	public function setEnemy(enemyNum:Int, x:Float, y:Float):Bool
+
+	public function set(enemyNum:Int, x:Float, y:Float):Bool
 	{
 		var e:Enemy = null;
 		switch(enemyNum){
-		case 11:
-			e = new Gunner(x, y, bullets);
-		case 12:
-			e = new Walker(x, y, bullets);
-		case 13:
-			e = new Trampoline(x, y);
-		case 14:
-			e = new Bloomer(x, y, enemies);
+		case 20:
+			e = new Walker(x, y);
+		case 21:
+			e = new Gunner(x, y);
+		case 22:
+			e = new Bloomer(x, y, target);
 		default:
+			return false;
 		}
-		return addEnemy(e);
-	}
-
-	private function addEnemy(e:Actor):Bool
-	{
-		if (e == null) return false;
-		container.addChild(e.container);
-		enemies.add(e);
-		return true;
+		InGame.stage.setIDByFloat(x, y, "0");
+		return add(e);
 	}
 }
