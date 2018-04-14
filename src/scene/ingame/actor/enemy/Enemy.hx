@@ -16,14 +16,19 @@ class Enemy extends Actor
 
 	public override function hitAffect(e:Actor):Void
 	{
-		var f = new Point(e.container.x - container.x, e.container.y - container.y);
 		var v = e.getVelocity();
-		f.normalize(3);
-		f.add(v);
-		e.addForce(f, isLimitBreak());
-		e.knockBack = 6;
-		e.hitStop = 6;
-		e.invincible = 30;
-		e.HP -= if (!isLimitBreak()) ATK else ATK + 1;
+		if (container.y - (e.container.y + e.hitBox.height) > -4 && v.y > 0){
+			e.addForce(new Point(v.x, -3), true);
+			HP -= 1;
+		}else{
+			var f = new Point(e.container.x - container.x, e.container.y - container.y);
+			f.normalize(3);
+			f.add(v);
+			e.addForce(f, isLimitBreak());
+			e.knockBack = 6;
+			e.hitStop = 6;
+			e.invincible = 30;
+			e.HP -= if (!isLimitBreak()) ATK else ATK + 1;
+		}
 	}
 }

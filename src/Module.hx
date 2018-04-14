@@ -64,10 +64,14 @@ class Module
 		}
 		return false;
 	}
+	
+	static public function toRad(degree:Float):Float{
+		return Math.PI / 180 * degree;
+	}
 
 	static public function rotateVector2D(v:Point, degree:Float):Point{
 		var mat:Matrix = new Matrix();
-		mat.rotate(Math.PI / 180 * degree);
+		mat.rotate(toRad(degree));
 		return mat.deltaTransformPoint(v);
 	}
 	

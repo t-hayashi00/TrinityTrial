@@ -70,6 +70,7 @@ class InGame extends Scene
 
 		if (goToNextStage)
 		{
+			seq.clear();
 			seq.add(Game.hideScreen(5));
 			seq.wait(10);
 			seq.add(
@@ -100,7 +101,8 @@ class InGame extends Scene
 		var dest:Point = new Point(Game.width / 2 - subject.x * field.scaleX, Game.height / 2 - subject.y * field.scaleY);
 		var scroll:Point = dest;
 
-		field.x = scroll.x;
-		field.y = scroll.y;
+		
+		field.x = dest.x;
+		field.y = dest.y;
 	}
 }

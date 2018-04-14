@@ -1,4 +1,5 @@
 package scene.ingame.actor.object;
+import openfl.geom.Point;
 
 /**
  * ...
@@ -40,6 +41,11 @@ class BombBlock extends Object
 
 	public override function hitAffect(e:Actor):Void
 	{
+		var v = e.getVelocity();
+		if (container.y - (e.container.y + e.hitBox.height) > -4 && v.y > 0){
+			e.addForce(new Point(v.x, -3), true);
+			HP -= 1;
+		}
 		if (e.isLimitBreak())
 		{
 			e.knockBack = 6;

@@ -17,7 +17,6 @@ class PlayerManager
 	private var isExtincted:Bool = false;
 	private var shell:Actor = null;
 	private var aiming:Aiming = new Aiming();
-	private var nowLeader:Bitmap;
 	private var deadMan:List<Actor>;
 
 	public var subject:Point = new Point();
@@ -36,8 +35,6 @@ class PlayerManager
 			npc.add(p);
 		}
 		pc = npc.pop();
-		nowLeader = new Bitmap(Assets.getBitmapData("img/c_arrow.png"));
-		container.addChild(nowLeader);
 	}
 
 	public function playerUpdate():Bool
@@ -55,8 +52,6 @@ class PlayerManager
 	{
 		pcPos.x = pc.container.x + pc.hitBox.width/2;
 		pcPos.y = pc.container.y + pc.hitBox.height/2;
-		nowLeader.x = pc.container.x -2;
-		nowLeader.y = pc.container.y - 16;
 		if (Module.isKeyPressed(Keyboard.Q))
 		{
 			isExtincted = false;

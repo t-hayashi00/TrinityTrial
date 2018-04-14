@@ -14,6 +14,7 @@ class ActorMediator
 {
 	public var container:Sprite = new Sprite();
 	private var pm:PlayerManager;
+	private var ui:UserInterface;
 	private var actors:List<Actor> = new List<Actor>();
 	private var deadMan:List<Actor> = new List<Actor>();
 	private var bullets:List<Bullet> = new List<Bullet>();
@@ -33,12 +34,14 @@ class ActorMediator
 			}
 		}
 		pm = new PlayerManager(container, deadMan, party);
+		ui = new UserInterface(container, pm.npc);
 	}
 	
 	public function update():Bool{
 		actorUpdate();
 		bulletUpdate();
 		var isEnd = pm.playerUpdate();
+		ui.update(pm.pc);
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
