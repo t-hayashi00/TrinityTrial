@@ -11,7 +11,7 @@ import scene.ingame.stage.Stage_;
 using Sequencer;
 
 /**
- * ...
+ * ゲーム本体部分のシーンを表すクラス
  * @author sigmal00
  */
 class InGame extends Scene
@@ -22,21 +22,20 @@ class InGame extends Scene
 	public static var party:Int;
 	private static var goToNextStage:Bool = false;
 
-	private var seq:Sequencer = new Sequencer(false);
-
 	private var field:Sprite = new Sprite();
 	private var actorMediator:ActorMediator;
-	private var panorama:Bitmap = new Bitmap(Assets.getBitmapData("img/panorama.png"));
-
-	public function new(game:Sprite, stageNum_:Int, floorNum_:Int, party:Int)
+	private var panorama:Bitmap;
+	
+	public function new(stageNum_:Int, floorNum_:Int, party:Int)
 	{
-		this.game = game;
 		stageNum = stageNum_;
 		floorNum = floorNum_;
-		game.addChild(panorama);
-		game.addChild(field);
+		panorama = new Bitmap(Assets.getBitmapData("img/panorama.png"));
+		container.addChild(panorama);
+		container.addChild(field);
 		stage = StageFactory.generate(stageNum_, floorNum_);
-		if (stage == null ) {}
+		goToNextStage = false;
+		if (stage == null ) {trace("stage == null");}
 		field.addChild(stage.container);
 		actorMediator = new ActorMediator(party);
 		field.addChild(actorMediator.container);
@@ -44,51 +43,34 @@ class InGame extends Scene
 		field.scaleY = 2.0;
 		actorMediator.update();
 		camera(actorMediator.getSubject());
-		seq.add(Game.showScreen(5));
-		seq.wait(10);
+		trace("scene generated");
 	}
 
-	var nextScene:Scene = this;
 	public override function update():Scene
 	{
-		if (!seq.run()) return this;
 		camera(actorMediator.getSubject());
 		if (actorMediator.update())
 		{
-			seq.wait(60);
-			seq.add(Game.hideScreen(5));
-			seq.wait(10);
-			seq.add(
-			{
-				var so:SharedObject = SharedObject.getLocal("saveData");
-				so.data.stage = stageNum;
-				so.data.party = 1;
-				teardown();
-				nextScene = new InGame(game, stageNum, floorNum, 1);
-			});
+			var so:SharedObject = SharedObject.getLocal("saveData");
+			so.data.stage = stageNum;
+			so.data.party = 1;
+			return new InGame(stageNum, floorNum, 1);
 		}
-
-		if (goToNextStage)
+		else if (goToNextStage)
 		{
-			seq.clear();
-			seq.add(Game.hideScreen(5));
-			seq.wait(10);
-			seq.add(
-			{
-				teardown();
-				goToNextStage = false;
-				nextScene = new InGame(game, stageNum, floorNum, party);
-			});
+			return new InGame(stageNum, floorNum, party);
 		}
-		return nextScene;
+		return this;
 	}
 
+	// フロアを一つ進める
 	public static function goToNextFloor():Void
 	{
 		++floorNum;
 		goToNextStage = true;
 	}
 
+	// 指定したフロアとステージに移動する
 	public static function setNextStage(stageNum_:Int, floorNum_:Int):Void
 	{
 		stageNum = stageNum_;
@@ -96,11 +78,11 @@ class InGame extends Scene
 		goToNextStage = true;
 	}
 
+	// カメラ制御を行う
 	private function camera(subject:Point):Void
 	{
 		var dest:Point = new Point(Game.width / 2 - subject.x * field.scaleX, Game.height / 2 - subject.y * field.scaleY);
 		var scroll:Point = dest;
-
 		
 		field.x = dest.x;
 		field.y = dest.y;

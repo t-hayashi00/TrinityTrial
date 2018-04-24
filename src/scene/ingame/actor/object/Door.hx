@@ -2,7 +2,7 @@ package scene.ingame.actor.object;
 import scene.ingame.actor.Actor;
 
 /**
- * ...
+ * 次のフロアへ進む扉
  * @author sigmal00
  */
 class Door extends Object

@@ -1,7 +1,8 @@
 package scene.ingame.actor.enemy;
 
 /**
- * ...
+ * Bloomerが吐き出す弾
+ * 重力の影響を受ける
  * @author sigmal00
  */
 class Pollen extends Enemy

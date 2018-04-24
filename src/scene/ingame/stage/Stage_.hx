@@ -9,13 +9,15 @@ import openfl.display.Bitmap;
 import openfl.display.BitmapData;
 
 /**
- * ステージの基底クラス
+ * ステージを表すクラス
+ * このクラスの保持する情報は色々なクラスから要求されるのでpublicフィールドのメンバが多い
  * @author sigmal00
  */
 class Stage_
 {
 	public var container:Sprite = new Sprite();
-	public var bmp:Bitmap;
+	public var upper:Bitmap;
+	public var lower:Bitmap;
 	public var showX:Float = 0;
 	public var showY:Float = 0;
 	private var map:Array<Array<String>> = new Array<Array<String>>();
@@ -31,7 +33,7 @@ class Stage_
 		var input:String;
 		try
 		{
-			input = Assets.getText("img/stage" + stage+"-" + floor + ".csv");
+			input = Assets.getText("img/stage/stage" + stage+"-" + floor + ".csv");
 		}
 		catch (msg:String)
 		{
@@ -46,8 +48,13 @@ class Stage_
 			map.push(cast(tmp[i].split(",")));
 		}
 
-		bmp = new Bitmap(new BitmapData(Game.GRID_SIZE * w, Game.GRID_SIZE * h));
-		container.addChild(bmp);
+		
+		lower = new Bitmap(new BitmapData(Game.GRID_SIZE * w, Game.GRID_SIZE * h, true, 0x00000000));
+		container.addChild(lower);
+		
+		upper = new Bitmap(new BitmapData(Game.GRID_SIZE * w, Game.GRID_SIZE * h, true, 0x00000000));
+		container.addChild(upper);
+
 		var cnt:Int = 0;
 		var c:Int = 0x00CC00;
 		for (y in 0...h)
@@ -65,7 +72,7 @@ class Stage_
 						if (getID(x, y-1) != "1")
 						{
 							rect.y = 64;
-							bmp.bitmapData.copyPixels(mapChip,rect,new Point (x*16,(y-1)*16));
+							lower.bitmapData.copyPixels(mapChip,rect,new Point (x*16,(y-1)*16));
 							rect.y = 16;
 						}
 						rect.y += if (getID(x, y+1) != "1") 32 else 0;
@@ -74,7 +81,7 @@ class Stage_
 						rect.x += if (getID(x - 1, y) != "2")16 else 0;
 						rect.x += if (getID(x + 1, y) != "2")32 else 0;
 						rect.y = if (getID(x, y - 1) != "2") 0 else 32;
-						bmp.bitmapData.copyPixels(mapChip, rect, new Point (x * 16, (y - 1) * 16));
+						lower.bitmapData.copyPixels(mapChip, rect, new Point (x * 16, (y - 1) * 16));
 						rect.y = 16;
 					case "100":
 						var w = new Window(x * 16, y * 16, 100, 28, "Z ... Jump\nLEFT , RIGHT ... Move", false);
@@ -96,7 +103,7 @@ class Stage_
 						rect.x = 0;
 						rect.y = 0;
 				}
-				bmp.bitmapData.copyPixels(mapChip,rect,new Point (x*16,y*16));
+				lower.bitmapData.copyPixels(mapChip,rect,new Point (x*16,y*16));
 			}
 		}
 		trace("stage constructed");

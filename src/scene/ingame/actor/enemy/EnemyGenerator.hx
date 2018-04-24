@@ -1,9 +1,8 @@
 package scene.ingame.actor.enemy;
-import openfl.display.Sprite;
 import scene.ingame.actor.Generator;
 
 /**
- * ...
+ * Enemyの生成管理を行うクラス
  * @author sigmal00
  */
 class EnemyGenerator extends Generator
@@ -19,6 +18,8 @@ class EnemyGenerator extends Generator
 			e = new Gunner(x, y);
 		case 22:
 			e = new Bloomer(x, y, target);
+		case 23:
+			e = new Boss1(x, y);
 		default:
 			return false;
 		}

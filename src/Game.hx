@@ -27,8 +27,11 @@ class Game
 	public static var FC_VELOCITY:Float = 5.5;
 
 	private var game:Sprite;
+	private var ingame:Sprite = new Sprite();
+	private var isSeneChange:Bool = false;
 
 	public static var scene:scene.Scene;
+	private var nextScene:scene.Scene = null;
 	/*	private static var title:scene.Scene;
 		private static var inGame:scene.Scene;
 		private static var gemeOver:scene.Scene;
@@ -45,32 +48,64 @@ class Game
 		setup();
 		screenSp.addChild(new Bitmap(Assets.getBitmapData("img/changeScene.png")));
 		screenSp.x = -400;
+		game.addChild(ingame);
 		game.addChild(screenSp);
 		game.stage.addEventListener(Event.ENTER_FRAME, update);
+		Game.showScreen(15, false);
 	}
 
 	public function setup():Void
 	{
-		showScreen(5);
-		scene = new Title(game);
+		scene = new Title();
+		ingame.addChild(scene.container);
 	}
 
 	private function update(e:Event):Void
 	{
-		screenSeq.run();
-		changeScene(scene.update());
-		game.addChild(screenSp);
+//		trace(System.totalMemory);
+		if (!screenSeq.run() && isWait)return;
+
+		if (!isSeneChange)
+		{
+			nextScene = scene.update();
+			if (scene !=  nextScene)
+			{
+				hideScreen(5, true);
+				isSeneChange = true;
+			}
+		}
+		else{
+			ingame.removeChild(scene.container);
+			ingame.addChild(nextScene.container);
+			scene = nextScene;
+			showScreen(5, true);
+			isSeneChange = false;
+		}
 	}
 
 	private function changeScene(nextScene:Scene):Void
 	{
+		if (scene !=  nextScene)
+		{
+			hideScreen(5, true);
+			isSeneChange = false;
+		}
+		else{
+			showScreen(5, false);
+			scene = nextScene;
+		}
+		if (isSeneChange)
+		{
+		}
 		scene = nextScene;
 	}
-	
+
 	static var screenSeq:Sequencer = new Sequencer(false);
 	static var screenSp:Sprite = new Sprite();
-	public static function hideScreen(time:Int)
+	static var isWait:Bool = false;
+	public static function hideScreen(time:Int, isWait_:Bool)
 	{
+		isWait = isWait_;
 		if (time <= 0) time = 1;
 		screenSeq.clear();
 		screenSeq.add(
@@ -85,8 +120,9 @@ class Game
 		}
 	}
 
-	public static function showScreen(time:Int)
+	public static function showScreen(time:Int, isWait_:Bool)
 	{
+		isWait = isWait_;
 		if (time <= 0) time = 1;
 		screenSeq.clear();
 		screenSeq.add(screenSp.x = -400);

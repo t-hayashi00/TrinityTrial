@@ -1,9 +1,8 @@
 package scene.ingame.actor.object;
-import openfl.geom.Point;
 import scene.ingame.actor.Generator;
 
 /**
- * ...
+ * Objectの生成を管理するクラス
  * @author sigmal00
  */
 class ObjectGenerator extends Generator

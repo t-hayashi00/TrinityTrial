@@ -3,7 +3,7 @@ import scene.ingame.actor.State;
 using Sequencer;
 
 /**
- * ...
+ * 歩き回る敵
  * @author sigmal00
  */
 class Walker extends Enemy
@@ -29,11 +29,7 @@ class Walker extends Enemy
 		seq.add(state.command = State.commands.UP);
 		seq.wait(60);
 	}
-	
-	private function test():Void{
-		trace("ok");
-	}
-	
+		
 	public override function update():Bool{
 		if(state.act != State.actions.DEAD) seq.run();
 		return super.update();

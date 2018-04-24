@@ -3,7 +3,7 @@ import openfl.geom.Point;
 import scene.ingame.actor.Actor;
 
 /**
- * ...
+ * 踏むと高く飛び上がる
  * @author sigmal00
  */
 class Trampoline extends Object

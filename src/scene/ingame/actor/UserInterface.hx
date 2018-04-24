@@ -12,6 +12,7 @@ class UserInterface
 	private var target:Sprite;
 	private var npc:List<Actor>;
 	private var nowLeader:Bitmap;
+	
 	public function new(target:Sprite, npc:List<Actor>) 
 	{
 		this.target = target;

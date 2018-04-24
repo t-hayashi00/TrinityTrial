@@ -24,6 +24,7 @@ class Actor
 
 	public var state:State = new State();
 
+	public var TYPE:String = "";
 	public var HP:Int = 1;
 	public var ATK:Int = 0;
 	public var knockBack:Int = 0;

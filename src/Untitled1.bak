@@ -1,3 +1,5 @@
+C:\Users\T\khulaz\03_Game\byHaxe\TrinityTrial\src\scene\ingame\actor\Generator.hx
+
 package scene.ingame.actor;
 import openfl.display.Sprite;
 
@@ -5,21 +7,21 @@ import openfl.display.Sprite;
  * Generatorの基底クラス
  * @author sigmal00
  */
-class Generator 
+class Generator
 {
 	private var target:List<Dynamic>;
 	private var container:Sprite;
 
-	public function new() 
+	public function new()
 	{
 	}
-	
+
 	public function setup(target:List<Dynamic>, container:Sprite)
 	{
 		this.target = target;
 		this.container = container;
 	}
-	
+
 	private function add(e:Dynamic):Bool
 	{
 		if (e == null) return false;
@@ -27,4 +29,5 @@ class Generator
 		target.add(e);
 		return true;
 	}
+
 }

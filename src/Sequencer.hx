@@ -3,7 +3,7 @@ package;
 import haxe.macro.Expr;
 
 /**
- * ...
+ * コルーチン処理を実現するクラス
  * @author sigmal00
  */
 class Sequencer

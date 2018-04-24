@@ -1,25 +1,31 @@
 package scene.ingame.actor.object;
-import openfl.geom.Point;
+
+import scene.ingame.spritesheet.SpritesheetManager;
+import scene.ingame.spritesheet.BlockSp;
 using Sequencer;
 
 /**
- * ...
+ * 障害物となるブロック
  * @author sigmal00
  */
 class Block extends Object
 {
 	private var seq:Sequencer = new Sequencer(false);
 	private var map:Map <Int, Block>;
+	private var spSheet:SpritesheetManager;
 	
 	public override function new(x:Float, y:Float, map:Map<Int, Block>)
 	{
 		this.map = map;
 		cr = 0xEE00EE;
 		super(x, y, 16, 16);
+		spSheet = new BlockSp(this);
+		hitBox.alpha = 0;
 	}
 	
 	public override function update():Bool
 	{
+		spSheet.update();
 		knockBack = 0;
 		invincible = 0;
 		shellCount = 0;
@@ -29,6 +35,7 @@ class Block extends Object
 
 	public override function hitAffect(e:Actor):Void
 	{
+		if (e != null) return;
 		if (seq.isEmpty())
 		{
 			seq.wait(3);

@@ -20,18 +20,14 @@ class Gunner extends Enemy
 		seq.add(
 		{
 			state.command = State.commands.FREE;
-//			state.command += State.commands.UP;
+			state.command += State.commands.UP;
 		});
 		seq.wait(30);
 		seq.add(
 		{
-			var result = ActorMediator.bulletGenerator.set(1, container.x, container.y, container.x - 1, container.y, 3);
+			ActorMediator.bulletGenerator.addBullet1(container.x, container.y, container.x - 1, container.y, 3);
 		});
 		seq.wait(120);
-	}
-	
-	private function test():Void{
-		trace("ok");
 	}
 	
 	public override function update():Bool{

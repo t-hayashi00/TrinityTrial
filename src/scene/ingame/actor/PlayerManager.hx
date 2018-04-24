@@ -1,6 +1,4 @@
 package scene.ingame.actor;
-import openfl.Assets;
-import openfl.display.Bitmap;
 import openfl.geom.Point;
 import openfl.ui.Keyboard;
 import openfl.display.Sprite;

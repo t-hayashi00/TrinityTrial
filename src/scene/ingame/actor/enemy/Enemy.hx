@@ -11,6 +11,7 @@ class Enemy extends Actor
 	public function new(x:Float, y:Float, w:Float, h:Float)
 	{
 		super(x, y, w, h);
+		TYPE = "Enemy";
 		ATK = 0;
 	}
 

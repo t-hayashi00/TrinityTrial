@@ -1,24 +1,31 @@
 package scene.ingame.actor.object;
 import openfl.geom.Point;
+import scene.ingame.spritesheet.SpritesheetManager;
+import scene.ingame.spritesheet.BombBlockSp;
 
 /**
- * ...
+ * 爆弾ブロック
+ * 破壊すると隣接しているブロックを消滅させる
  * @author sigmal00
  */
 class BombBlock extends Object
 {
 	private var map:Map <Int, Block>;
+	private var spSheet:SpritesheetManager;
 
 	public override function new(x:Float, y:Float, map:Map<Int, Block>)
 	{
 		this.map = map;
 		cr = 0xFFFF00;
 		super(x, y, 16, 16);
+		hitBox.alpha = 0;
 		HP = 1;
+		spSheet = new BombBlockSp(this);
 	}
 
 	public override function update():Bool
 	{
+		spSheet.update();
 		knockBack = 0;
 		invincible = 0;
 		shellCount = 0;

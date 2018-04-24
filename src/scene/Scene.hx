@@ -5,16 +5,12 @@ import openfl.display.Sprite;
  * ゲームのシーンを表す基底クラス
  * @author sigmal00
  */
-class Scene 
+class Scene
 {
-	private var game:Sprite;
+	public var container:Sprite = new Sprite();
+
 	public function update():Scene
 	{
 		return this;
-	}
-	
-	private function teardown():Void
-	{
-		game.removeChildren();		
 	}
 }

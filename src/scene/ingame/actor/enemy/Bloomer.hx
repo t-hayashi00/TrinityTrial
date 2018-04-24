@@ -1,12 +1,10 @@
 package scene.ingame.actor.enemy;
-import openfl.display.Sprite;
 import openfl.geom.Point;
-import scene.ingame.actor.Actor;
 import scene.ingame.actor.State;
 using Sequencer;
 
 /**
- * ...
+ * 重力の影響を受ける弾を吐き出す敵
  * @author sigmal00
  */
 class Bloomer extends Enemy

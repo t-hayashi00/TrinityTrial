@@ -11,7 +11,7 @@ import openfl.system.System;
 using Sequencer;
 
 /**
- * ...
+ * タイトルを表すシーン
  * @author sigmal00
  */
 class Title extends Scene
@@ -20,14 +20,11 @@ class Title extends Scene
 
 	private var title:Bitmap = new Bitmap(Assets.getBitmapData("img/title.png"));
 
-	public function new(game:Sprite)
+	public function new()
 	{
-		this.game = game;
 		trace(System.totalMemory);
 		title.scaleX = 1.05;
 		title.scaleY = 1.05;
-		seq.wait(30);
-		seq.add(Game.showScreen(15));
 		for (i in 0...15)
 		{
 			seq.add(
@@ -43,28 +40,20 @@ class Title extends Scene
 		tf.scaleY = 2.0;
 		tf.x = 30;
 		tf.y = Game.height / 2 + 100;
-		game.addChild(title);
-		game.addChild(tf);
+		container.addChild(title);
+		container.addChild(tf);
 	}
 
-	var result:Scene = this;
 	public override function update():Scene
 	{
 		if (!seq.run())return this;
 		if (Module.isKeyPressed(Keyboard.Z))
 		{
-			seq.add(Game.hideScreen(5));
-			seq.wait(5);
-			seq.add(
-			{
-				teardown();
-				var so:SharedObject = SharedObject.getLocal("saveData");
-				if (so.data.stage == null) so.data.stage = 1;
-				if (so.data.party == null) so.data.party = 1;
-				result = new InGame(game, so.data.stage, 1, so.data.party);
-			});
-			seq.wait(5);
+			var so:SharedObject = SharedObject.getLocal("saveData");
+			if (so.data.stage == null) so.data.stage = 1;
+			if (so.data.party == null) so.data.party = 1;
+			return new InGame(so.data.stage, 1, so.data.party);
 		}
-		return result;
+		return this;
 	}
 }
