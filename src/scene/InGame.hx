@@ -5,6 +5,7 @@ import openfl.display.Bitmap;
 import openfl.display.Sprite;
 import openfl.geom.Point;
 import openfl.net.SharedObject;
+import animator.Animator;
 import scene.ingame.actor.ActorMediator;
 import scene.ingame.stage.StageFactory;
 import scene.ingame.stage.Stage_;
@@ -20,6 +21,7 @@ class InGame extends Scene
 	public static var stageNum:Int;
 	public static var floorNum:Int;
 	public static var party:Int;
+	public static var animator:Animator;
 	private static var goToNextStage:Bool = false;
 
 	private var field:Sprite = new Sprite();
@@ -43,11 +45,13 @@ class InGame extends Scene
 		field.scaleY = 2.0;
 		actorMediator.update();
 		camera(actorMediator.getSubject());
+		animator = new Animator(field);
 		trace("scene generated");
 	}
 
 	public override function update():Scene
 	{
+		animator.draw();
 		camera(actorMediator.getSubject());
 		if (actorMediator.update())
 		{

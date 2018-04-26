@@ -8,17 +8,19 @@ import openfl.display.Sprite;
 class Animator
 {
 	private var target:Sprite;
-	private var animations:List<Animation> = new List<Animation>;
+	private var animations:List<Animation> = new List<Animation>();
 
 	public function new(target:Sprite)
 	{
 		this.target = target;
 	}
 
-	public function add(animationName:String):Void
+	public function add(animationName:String, x:Float, y:Float):Void
 	{
 		var animation:Animation = AnimationFactory.get(animationName);
 		animations.add(animation);
+		animation.container.x = x;
+		animation.container.y = y;
 		target.addChild(animation.container);
 	}
 

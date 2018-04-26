@@ -62,7 +62,7 @@ class Game
 
 	private function update(e:Event):Void
 	{
-//		trace(System.totalMemory);
+		trace(System.totalMemory);
 		if (!screenSeq.run() && isWait)return;
 
 		if (!isSeneChange)

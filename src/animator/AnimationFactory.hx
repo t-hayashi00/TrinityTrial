@@ -1,5 +1,5 @@
 package animator;
-import animator.animation.Animation;
+import animator.animation.*;
 
 /**
  * アニメーションを生成する
@@ -7,12 +7,14 @@ import animator.animation.Animation;
  */
 class AnimationFactory
 {
+/*	private static var anime:Map<String, Void -> Animation> = [
+				"sample" => function():Animation{return new Animation(); },
+				"death" => function():Animation{return new Death(); },
+			];*/
 	public static function get(animationName:String):Animation
 	{
-		switch (animationName)
-		{
-		default:
-			return new Animation();
-		}
+		var result:Animation = new Death();
+		if (result == null) return new Animation();
+		return result;
 	}
 }

@@ -13,6 +13,7 @@ class Pollen extends Enemy
 	{
 		cr = 0xFFAAAA;
 		super(x, y, 5, 5);
+		TYPE = "Object";
 		ATK = 1;
 		HP = 90;
 	}

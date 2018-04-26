@@ -45,7 +45,8 @@ class ActorMediator
 		var it:Iterator<Actor> = deadMan.iterator();
 		while (it.hasNext()){
 			var d = it.next();
-			if(!d.update()){
+			if (!d.update()){
+				if(d.TYPE == "Enemy" || d.TYPE == "Player")InGame.animator.add("death",d.container.x + d.hitBox.width/2,d.container.y + d.hitBox.height/2);
 				container.removeChild(d.container);
 				deadMan.remove(d);
 			}

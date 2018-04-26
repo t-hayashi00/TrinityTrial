@@ -1,5 +1,6 @@
 package scene.ingame.spritesheet;
 
+import animator.Animator;
 import scene.ingame.actor.Actor;
 import scene.ingame.actor.State;
 import openfl.display.BitmapData;
