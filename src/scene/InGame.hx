@@ -88,7 +88,7 @@ class InGame extends Scene
 		var dest:Point = new Point(Game.width / 2 - subject.x * field.scaleX, Game.height / 2 - subject.y * field.scaleY);
 		var scroll:Point = dest;
 		
-		field.x = dest.x;
-		field.y = dest.y;
+		field.x = (field.x + scroll.x) /2;
+		field.y = (field.y + scroll.y) /2;
 	}
 }
