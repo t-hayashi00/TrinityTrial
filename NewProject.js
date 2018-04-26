@@ -1018,7 +1018,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "NewProject";
-	var config = { build : "25", company : "sigmal00", file : "NewProject", fps : 60, name : "TrinityTrial", orientation : "", packageName : "TrinityTrial", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 0, borderless : false, depthBuffer : false, display : 0, fullscreen : false, hardware : true, height : 480, hidden : null, maximized : null, minimized : null, parameters : { }, resizable : true, stencilBuffer : true, title : "TrinityTrial", vsync : false, width : 800, x : null, y : null}]};
+	var config = { build : "47", company : "sigmal00", file : "NewProject", fps : 60, name : "TrinityTrial", orientation : "", packageName : "TrinityTrial", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 0, borderless : false, depthBuffer : false, display : 0, fullscreen : false, hardware : true, height : 480, hidden : null, maximized : null, minimized : null, parameters : { }, resizable : true, stencilBuffer : true, title : "TrinityTrial", vsync : false, width : 800, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -3262,116 +3262,682 @@ EReg.prototype = {
 	}
 	,__class__: EReg
 };
-var Game = function(game) {
-	this.panorama = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/panorama.png"));
-	this.field = new openfl_display_Sprite();
-	this.game = game;
-	Game.display = game.stage;
-	Module.setup();
-	Game.width = this.panorama.get_width();
-	Game.height = this.panorama.get_height();
-	game.addChild(this.panorama);
-	game.stage.addEventListener("enterFrame",$bind(this,this.update));
-	game.stage.set_frameRate(60);
-	game.set_scrollRect(new openfl_geom_Rectangle(0,0,this.panorama.get_width(),this.panorama.get_height()));
-	game.addChild(this.field);
-	Game.stage = stage_StageFactory.generate(0,0);
-	this.field.addChild(Game.stage.container);
-	this.actorMediator = new actor_ActorMediator();
-	this.field.addChild(this.actorMediator.container);
-	this.field.set_scaleX(2.0);
-	this.field.set_scaleY(2.0);
+var Sequencer = function(loop) {
+	this.runningIndex = 0;
+	this.index = 0;
+	this.waitingCount = 0;
+	this.waitTerms = [];
+	this.functions = [[]];
+	this.loop = loop;
 };
-$hxClasses["Game"] = Game;
-Game.__name__ = ["Game"];
-Game.prototype = {
-	game: null
-	,field: null
-	,panorama: null
-	,actorMediator: null
-	,update: function(event) {
-		this.camera(this.actorMediator.getSubject());
-		this.actorMediator.update();
+$hxClasses["Sequencer"] = Sequencer;
+Sequencer.__name__ = ["Sequencer"];
+Sequencer.prototype = {
+	functions: null
+	,waitTerms: null
+	,waitingCount: null
+	,index: null
+	,runningIndex: null
+	,loop: null
+	,isEnd: null
+	,loopEnd: function() {
+		this.loop = false;
 	}
-	,camera: function(subject) {
-		var dest = new openfl_geom_Point(Game.width / 2 - subject.x * this.field.get_scaleX(),Game.height / 2 - subject.y * this.field.get_scaleY());
-		var scroll = dest;
-		this.field.set_x(scroll.x);
-		this.field.set_y(scroll.y);
+	,addSequence: function(func) {
+		this.isEnd = false;
+		this.functions[this.index].push(func);
 	}
-	,__class__: Game
-};
-var HxOverrides = function() { };
-$hxClasses["HxOverrides"] = HxOverrides;
-HxOverrides.__name__ = ["HxOverrides"];
-HxOverrides.strDate = function(s) {
-	var _g = s.length;
-	switch(_g) {
-	case 8:
-		var k = s.split(":");
-		var d = new Date();
-		d["setTime"](0);
-		d["setUTCHours"](k[0]);
-		d["setUTCMinutes"](k[1]);
-		d["setUTCSeconds"](k[2]);
-		return d;
-	case 10:
-		var k1 = s.split("-");
-		return new Date(k1[0],k1[1] - 1,k1[2],0,0,0);
-	case 19:
-		var k2 = s.split(" ");
-		var y = k2[0].split("-");
-		var t = k2[1].split(":");
-		return new Date(y[0],y[1] - 1,y[2],t[0],t[1],t[2]);
-	default:
-		throw new js__$Boot_HaxeError("Invalid date format : " + s);
+	,waitSequence: function(term) {
+		this.isEnd = false;
+		this.waitTerms.push(term);
+		this.index++;
+		this.functions.push([]);
 	}
-};
-HxOverrides.cca = function(s,index) {
-	var x = s.charCodeAt(index);
-	if(x != x) {
-		return undefined;
+	,isEmpty: function() {
+		return this.runningIndex == this.functions.length - 1;
 	}
-	return x;
-};
-HxOverrides.substr = function(s,pos,len) {
-	if(len == null) {
-		len = s.length;
-	} else if(len < 0) {
-		if(pos == 0) {
-			len = s.length + len;
+	,clear: function() {
+		this.functions = [[]];
+		this.waitTerms = [];
+		this.waitingCount = 0;
+		this.index = 0;
+		this.runningIndex = 0;
+	}
+	,run: function() {
+		if(this.waitingCount == 0) {
+			var _g = 0;
+			var _g1 = this.functions[this.runningIndex];
+			while(_g < _g1.length) {
+				var func = _g1[_g];
+				++_g;
+				func();
+			}
+			if(this.runningIndex == this.functions.length - 1) {
+				if(this.loop) {
+					this.waitingCount = 0;
+					this.index = 0;
+					this.runningIndex = 0;
+					return false;
+				}
+				this.isEnd = true;
+				return true;
+			}
+			this.waitingCount = this.waitTerms[this.runningIndex];
 		} else {
-			return "";
+			this.waitingCount--;
+			if(this.waitingCount == 0) {
+				this.runningIndex++;
+			}
 		}
-	}
-	return s.substr(pos,len);
-};
-HxOverrides.remove = function(a,obj) {
-	var i = a.indexOf(obj);
-	if(i == -1) {
 		return false;
 	}
-	a.splice(i,1);
-	return true;
+	,__class__: Sequencer
 };
-HxOverrides.iter = function(a) {
-	return { cur : 0, arr : a, hasNext : function() {
-		return this.cur < this.arr.length;
-	}, next : function() {
-		return this.arr[this.cur++];
-	}};
+var openfl__$Vector_Vector_$Impl_$ = {};
+$hxClasses["openfl._Vector.Vector_Impl_"] = openfl__$Vector_Vector_$Impl_$;
+openfl__$Vector_Vector_$Impl_$.__name__ = ["openfl","_Vector","Vector_Impl_"];
+openfl__$Vector_Vector_$Impl_$.concat = function(this1,a) {
+	return this1.concat(a);
 };
-var Lambda = function() { };
-$hxClasses["Lambda"] = Lambda;
-Lambda.__name__ = ["Lambda"];
-Lambda.array = function(it) {
-	var a = [];
-	var i = $iterator(it)();
-	while(i.hasNext()) {
-		var i1 = i.next();
-		a.push(i1);
+openfl__$Vector_Vector_$Impl_$.copy = function(this1) {
+	return this1.copy();
+};
+openfl__$Vector_Vector_$Impl_$.get = function(this1,index) {
+	return this1.get(index);
+};
+openfl__$Vector_Vector_$Impl_$.indexOf = function(this1,x,from) {
+	if(from == null) {
+		from = 0;
 	}
-	return a;
+	return this1.indexOf(x,from);
+};
+openfl__$Vector_Vector_$Impl_$.insertAt = function(this1,index,element) {
+	this1.insertAt(index,element);
+};
+openfl__$Vector_Vector_$Impl_$.iterator = function(this1) {
+	return this1.iterator();
+};
+openfl__$Vector_Vector_$Impl_$.join = function(this1,sep) {
+	return this1.join(sep);
+};
+openfl__$Vector_Vector_$Impl_$.lastIndexOf = function(this1,x,from) {
+	if(from == null) {
+		from = 0;
+	}
+	return this1.lastIndexOf(x,from);
+};
+openfl__$Vector_Vector_$Impl_$.pop = function(this1) {
+	return this1.pop();
+};
+openfl__$Vector_Vector_$Impl_$.push = function(this1,x) {
+	return this1.push(x);
+};
+openfl__$Vector_Vector_$Impl_$.reverse = function(this1) {
+	return this1.reverse();
+};
+openfl__$Vector_Vector_$Impl_$.set = function(this1,index,value) {
+	return this1.set(index,value);
+};
+openfl__$Vector_Vector_$Impl_$.shift = function(this1) {
+	return this1.shift();
+};
+openfl__$Vector_Vector_$Impl_$.slice = function(this1,pos,end) {
+	return this1.slice(pos,end);
+};
+openfl__$Vector_Vector_$Impl_$.sort = function(this1,f) {
+	this1.sort(f);
+};
+openfl__$Vector_Vector_$Impl_$.splice = function(this1,pos,len) {
+	return this1.splice(pos,len);
+};
+openfl__$Vector_Vector_$Impl_$.toString = function(this1) {
+	if(this1 != null) {
+		return this1.toString();
+	} else {
+		return null;
+	}
+};
+openfl__$Vector_Vector_$Impl_$.unshift = function(this1,x) {
+	this1.unshift(x);
+};
+openfl__$Vector_Vector_$Impl_$.ofArray = function(a) {
+	var vector = openfl__$Vector_Vector_$Impl_$.toObjectVector(null);
+	var _g1 = 0;
+	var _g = a.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		vector.set(i,a[i]);
+	}
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.convert = function(v) {
+	return v;
+};
+openfl__$Vector_Vector_$Impl_$.toBoolVector = function(t,length,fixed) {
+	return new openfl__$Vector_BoolVector(length,fixed);
+};
+openfl__$Vector_Vector_$Impl_$.toIntVector = function(t,length,fixed) {
+	return new openfl__$Vector_IntVector(length,fixed);
+};
+openfl__$Vector_Vector_$Impl_$.toFloatVector = function(t,length,fixed) {
+	return new openfl__$Vector_FloatVector(length,fixed);
+};
+openfl__$Vector_Vector_$Impl_$.toFunctionVector = function(t,length,fixed) {
+	return new openfl__$Vector_FunctionVector(length,fixed);
+};
+openfl__$Vector_Vector_$Impl_$.toObjectVector = function(t,length,fixed) {
+	return new openfl__$Vector_ObjectVector(length,fixed);
+};
+openfl__$Vector_Vector_$Impl_$.fromBoolVector = function(vector) {
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.fromIntVector = function(vector) {
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.fromFloatVector = function(vector) {
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.fromFunctionVector = function(vector) {
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.fromObjectVector = function(vector) {
+	return vector;
+};
+openfl__$Vector_Vector_$Impl_$.get_fixed = function(this1) {
+	return this1.fixed;
+};
+openfl__$Vector_Vector_$Impl_$.set_fixed = function(this1,value) {
+	return this1.fixed = value;
+};
+openfl__$Vector_Vector_$Impl_$.get_length = function(this1) {
+	return this1.get_length();
+};
+openfl__$Vector_Vector_$Impl_$.set_length = function(this1,value) {
+	return this1.set_length(value);
+};
+var lime_math_Matrix3 = function(a,b,c,d,tx,ty) {
+	if(ty == null) {
+		ty = 0;
+	}
+	if(tx == null) {
+		tx = 0;
+	}
+	if(d == null) {
+		d = 1;
+	}
+	if(c == null) {
+		c = 0;
+	}
+	if(b == null) {
+		b = 0;
+	}
+	if(a == null) {
+		a = 1;
+	}
+	this.a = a;
+	this.b = b;
+	this.c = c;
+	this.d = d;
+	this.tx = tx;
+	this.ty = ty;
+};
+$hxClasses["lime.math.Matrix3"] = lime_math_Matrix3;
+lime_math_Matrix3.__name__ = ["lime","math","Matrix3"];
+lime_math_Matrix3.prototype = {
+	a: null
+	,b: null
+	,c: null
+	,d: null
+	,tx: null
+	,ty: null
+	,clone: function() {
+		return new lime_math_Matrix3(this.a,this.b,this.c,this.d,this.tx,this.ty);
+	}
+	,concat: function(m) {
+		var a1 = this.a * m.a + this.b * m.c;
+		this.b = this.a * m.b + this.b * m.d;
+		this.a = a1;
+		var c1 = this.c * m.a + this.d * m.c;
+		this.d = this.c * m.b + this.d * m.d;
+		this.c = c1;
+		var tx1 = this.tx * m.a + this.ty * m.c + m.tx;
+		this.ty = this.tx * m.b + this.ty * m.d + m.ty;
+		this.tx = tx1;
+	}
+	,copyColumnFrom: function(column,vector4) {
+		if(column > 2) {
+			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
+		} else if(column == 0) {
+			this.a = vector4.x;
+			this.c = vector4.y;
+		} else if(column == 1) {
+			this.b = vector4.x;
+			this.d = vector4.y;
+		} else {
+			this.tx = vector4.x;
+			this.ty = vector4.y;
+		}
+	}
+	,copyColumnTo: function(column,vector4) {
+		if(column > 2) {
+			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
+		} else if(column == 0) {
+			vector4.x = this.a;
+			vector4.y = this.c;
+			vector4.z = 0;
+		} else if(column == 1) {
+			vector4.x = this.b;
+			vector4.y = this.d;
+			vector4.z = 0;
+		} else {
+			vector4.x = this.tx;
+			vector4.y = this.ty;
+			vector4.z = 1;
+		}
+	}
+	,copyFrom: function(sourceMatrix3) {
+		this.a = sourceMatrix3.a;
+		this.b = sourceMatrix3.b;
+		this.c = sourceMatrix3.c;
+		this.d = sourceMatrix3.d;
+		this.tx = sourceMatrix3.tx;
+		this.ty = sourceMatrix3.ty;
+	}
+	,copyRowFrom: function(row,vector4) {
+		if(row > 2) {
+			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
+		} else if(row == 0) {
+			this.a = vector4.x;
+			this.c = vector4.y;
+		} else if(row == 1) {
+			this.b = vector4.x;
+			this.d = vector4.y;
+		} else {
+			this.tx = vector4.x;
+			this.ty = vector4.y;
+		}
+	}
+	,copyRowTo: function(row,vector4) {
+		if(row > 2) {
+			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
+		} else if(row == 0) {
+			vector4.x = this.a;
+			vector4.y = this.b;
+			vector4.z = this.tx;
+		} else if(row == 1) {
+			vector4.x = this.c;
+			vector4.y = this.d;
+			vector4.z = this.ty;
+		} else {
+			vector4.x = 0;
+			vector4.y = 0;
+			vector4.z = 1;
+		}
+	}
+	,createBox: function(scaleX,scaleY,rotation,tx,ty) {
+		if(ty == null) {
+			ty = 0;
+		}
+		if(tx == null) {
+			tx = 0;
+		}
+		if(rotation == null) {
+			rotation = 0;
+		}
+		this.a = scaleX;
+		this.d = scaleY;
+		this.b = rotation;
+		this.tx = tx;
+		this.ty = ty;
+	}
+	,createGradientBox: function(width,height,rotation,tx,ty) {
+		if(ty == null) {
+			ty = 0;
+		}
+		if(tx == null) {
+			tx = 0;
+		}
+		if(rotation == null) {
+			rotation = 0;
+		}
+		this.a = width / 1638.4;
+		this.d = height / 1638.4;
+		if(rotation != 0) {
+			var cos = Math.cos(rotation);
+			var sin = Math.sin(rotation);
+			this.b = sin * this.d;
+			this.c = -sin * this.a;
+			this.a *= cos;
+			this.d *= cos;
+		} else {
+			this.b = 0;
+			this.c = 0;
+		}
+		this.tx = tx + width / 2;
+		this.ty = ty + height / 2;
+	}
+	,equals: function(Matrix3) {
+		if(Matrix3 != null && this.tx == Matrix3.tx && this.ty == Matrix3.ty && this.a == Matrix3.a && this.b == Matrix3.b && this.c == Matrix3.c) {
+			return this.d == Matrix3.d;
+		} else {
+			return false;
+		}
+	}
+	,deltaTransformVector2: function(Vector2) {
+		return new lime_math_Vector2(Vector2.x * this.a + Vector2.y * this.c,Vector2.x * this.b + Vector2.y * this.d);
+	}
+	,identity: function() {
+		this.a = 1;
+		this.b = 0;
+		this.c = 0;
+		this.d = 1;
+		this.tx = 0;
+		this.ty = 0;
+	}
+	,invert: function() {
+		var norm = this.a * this.d - this.b * this.c;
+		if(norm == 0) {
+			this.a = this.b = this.c = this.d = 0;
+			this.tx = -this.tx;
+			this.ty = -this.ty;
+		} else {
+			norm = 1.0 / norm;
+			var a1 = this.d * norm;
+			this.d = this.a * norm;
+			this.a = a1;
+			this.b *= -norm;
+			this.c *= -norm;
+			var tx1 = -this.a * this.tx - this.c * this.ty;
+			this.ty = -this.b * this.tx - this.d * this.ty;
+			this.tx = tx1;
+		}
+		return this;
+	}
+	,mult: function(m) {
+		var result = new lime_math_Matrix3(this.a,this.b,this.c,this.d,this.tx,this.ty);
+		result.concat(m);
+		return result;
+	}
+	,rotate: function(theta) {
+		var cos = Math.cos(theta);
+		var sin = Math.sin(theta);
+		var a1 = this.a * cos - this.b * sin;
+		this.b = this.a * sin + this.b * cos;
+		this.a = a1;
+		var c1 = this.c * cos - this.d * sin;
+		this.d = this.c * sin + this.d * cos;
+		this.c = c1;
+		var tx1 = this.tx * cos - this.ty * sin;
+		this.ty = this.tx * sin + this.ty * cos;
+		this.tx = tx1;
+	}
+	,scale: function(sx,sy) {
+		this.a *= sx;
+		this.b *= sy;
+		this.c *= sx;
+		this.d *= sy;
+		this.tx *= sx;
+		this.ty *= sy;
+	}
+	,setRotation: function(theta,scale) {
+		if(scale == null) {
+			scale = 1;
+		}
+		this.a = Math.cos(theta) * scale;
+		this.c = Math.sin(theta) * scale;
+		this.b = -this.c;
+		this.d = this.a;
+	}
+	,setTo: function(a,b,c,d,tx,ty) {
+		this.a = a;
+		this.b = b;
+		this.c = c;
+		this.d = d;
+		this.tx = tx;
+		this.ty = ty;
+	}
+	,to3DString: function(roundPixels) {
+		if(roundPixels == null) {
+			roundPixels = false;
+		}
+		if(roundPixels) {
+			return "Matrix33d(" + this.a + ", " + this.b + ", " + "0, 0, " + this.c + ", " + this.d + ", " + "0, 0, 0, 0, 1, 0, " + (this.tx | 0) + ", " + (this.ty | 0) + ", 0, 1)";
+		} else {
+			return "Matrix33d(" + this.a + ", " + this.b + ", " + "0, 0, " + this.c + ", " + this.d + ", " + "0, 0, 0, 0, 1, 0, " + this.tx + ", " + this.ty + ", 0, 1)";
+		}
+	}
+	,toMozString: function() {
+		return "Matrix3(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + "px, " + this.ty + "px)";
+	}
+	,toString: function() {
+		return "Matrix3(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + ", " + this.ty + ")";
+	}
+	,transformVector2: function(pos) {
+		return new lime_math_Vector2(pos.x * this.a + pos.y * this.c + this.tx,pos.x * this.b + pos.y * this.d + this.ty);
+	}
+	,translate: function(dx,dy) {
+		this.tx += dx;
+		this.ty += dy;
+	}
+	,__cleanValues: function() {
+		this.a = Math.round(this.a * 1000) / 1000;
+		this.b = Math.round(this.b * 1000) / 1000;
+		this.c = Math.round(this.c * 1000) / 1000;
+		this.d = Math.round(this.d * 1000) / 1000;
+		this.tx = Math.round(this.tx * 10) / 10;
+		this.ty = Math.round(this.ty * 10) / 10;
+	}
+	,__transformX: function(pos) {
+		return pos.x * this.a + pos.y * this.c + this.tx;
+	}
+	,__transformY: function(pos) {
+		return pos.x * this.b + pos.y * this.d + this.ty;
+	}
+	,__translateTransformed: function(pos) {
+		this.tx = pos.x * this.a + pos.y * this.c + this.tx;
+		this.ty = pos.x * this.b + pos.y * this.d + this.ty;
+	}
+	,__class__: lime_math_Matrix3
+};
+var lime_utils_ObjectPool_$openfl_$geom_$Matrix = function(create,clean,size) {
+	if(create != null) {
+		this.create = create;
+	}
+	if(clean != null) {
+		this.clean = clean;
+	}
+	if(size != null) {
+		this.set_size(size);
+	}
+	this.__pool = new haxe_ds_ObjectMap();
+	this.activeObjects = 0;
+	this.inactiveObjects = 0;
+	this.__inactiveObject0 = null;
+	this.__inactiveObject1 = null;
+	this.__inactiveObjectList = new List();
+};
+$hxClasses["lime.utils.ObjectPool_openfl_geom_Matrix"] = lime_utils_ObjectPool_$openfl_$geom_$Matrix;
+lime_utils_ObjectPool_$openfl_$geom_$Matrix.__name__ = ["lime","utils","ObjectPool_openfl_geom_Matrix"];
+lime_utils_ObjectPool_$openfl_$geom_$Matrix.prototype = {
+	activeObjects: null
+	,inactiveObjects: null
+	,__inactiveObject0: null
+	,__inactiveObject1: null
+	,__inactiveObjectList: null
+	,__pool: null
+	,__size: null
+	,add: function(object) {
+		if(!this.__pool.exists(object)) {
+			this.__pool.set(object,false);
+			this.clean(object);
+			if(this.__inactiveObject0 == null) {
+				this.__inactiveObject0 = object;
+			} else if(this.__inactiveObject1 == null) {
+				this.__inactiveObject1 = object;
+			} else {
+				this.__inactiveObjectList.add(object);
+			}
+			this.inactiveObjects++;
+		}
+	}
+	,clean: function(object) {
+	}
+	,clear: function() {
+		this.__pool = new haxe_ds_ObjectMap();
+		this.activeObjects = 0;
+		this.inactiveObjects = 0;
+		this.__inactiveObject0 = null;
+		this.__inactiveObject1 = null;
+		this.__inactiveObjectList.clear();
+	}
+	,create: function() {
+		return null;
+	}
+	,get: function() {
+		var object = null;
+		if(this.inactiveObjects > 0) {
+			var object1 = null;
+			if(this.__inactiveObject0 != null) {
+				object1 = this.__inactiveObject0;
+				this.__inactiveObject0 = null;
+			} else if(this.__inactiveObject1 != null) {
+				object1 = this.__inactiveObject1;
+				this.__inactiveObject1 = null;
+			} else {
+				object1 = this.__inactiveObjectList.pop();
+				if(this.__inactiveObjectList.length > 0) {
+					this.__inactiveObject0 = this.__inactiveObjectList.pop();
+				}
+				if(this.__inactiveObjectList.length > 0) {
+					this.__inactiveObject1 = this.__inactiveObjectList.pop();
+				}
+			}
+			this.inactiveObjects--;
+			this.activeObjects++;
+			object = object1;
+		} else if(this.__size == null || this.activeObjects < this.__size) {
+			object = this.create();
+			if(object != null) {
+				this.__pool.set(object,true);
+				this.activeObjects++;
+			}
+		}
+		return object;
+	}
+	,release: function(object) {
+		this.activeObjects--;
+		if(this.__size == null || this.activeObjects + this.inactiveObjects < this.__size) {
+			this.clean(object);
+			if(this.__inactiveObject0 == null) {
+				this.__inactiveObject0 = object;
+			} else if(this.__inactiveObject1 == null) {
+				this.__inactiveObject1 = object;
+			} else {
+				this.__inactiveObjectList.add(object);
+			}
+			this.inactiveObjects++;
+		} else {
+			this.__pool.remove(object);
+		}
+	}
+	,__addInactive: function(object) {
+		if(this.__inactiveObject0 == null) {
+			this.__inactiveObject0 = object;
+		} else if(this.__inactiveObject1 == null) {
+			this.__inactiveObject1 = object;
+		} else {
+			this.__inactiveObjectList.add(object);
+		}
+		this.inactiveObjects++;
+	}
+	,__getInactive: function() {
+		var object = null;
+		if(this.__inactiveObject0 != null) {
+			object = this.__inactiveObject0;
+			this.__inactiveObject0 = null;
+		} else if(this.__inactiveObject1 != null) {
+			object = this.__inactiveObject1;
+			this.__inactiveObject1 = null;
+		} else {
+			object = this.__inactiveObjectList.pop();
+			if(this.__inactiveObjectList.length > 0) {
+				this.__inactiveObject0 = this.__inactiveObjectList.pop();
+			}
+			if(this.__inactiveObjectList.length > 0) {
+				this.__inactiveObject1 = this.__inactiveObjectList.pop();
+			}
+		}
+		this.inactiveObjects--;
+		this.activeObjects++;
+		return object;
+	}
+	,__removeInactive: function(count) {
+		if(count <= 0 || this.inactiveObjects == 0) {
+			return;
+		}
+		if(this.__inactiveObject0 != null) {
+			this.__pool.remove(this.__inactiveObject0);
+			this.__inactiveObject0 = null;
+			this.inactiveObjects--;
+			--count;
+		}
+		if(count == 0 || this.inactiveObjects == 0) {
+			return;
+		}
+		if(this.__inactiveObject1 != null) {
+			this.__pool.remove(this.__inactiveObject1);
+			this.__inactiveObject1 = null;
+			this.inactiveObjects--;
+			--count;
+		}
+		if(count == 0 || this.inactiveObjects == 0) {
+			return;
+		}
+		var _g_head = this.__inactiveObjectList.h;
+		while(_g_head != null) {
+			var val = _g_head.item;
+			_g_head = _g_head.next;
+			var object = val;
+			this.__pool.remove(object);
+			this.__inactiveObjectList.remove(object);
+			this.inactiveObjects--;
+			--count;
+			if(count == 0 || this.inactiveObjects == 0) {
+				return;
+			}
+		}
+	}
+	,get_size: function() {
+		return this.__size;
+	}
+	,set_size: function(value) {
+		if(value == null) {
+			this.__size = null;
+		} else {
+			var current = this.inactiveObjects + this.activeObjects;
+			this.__size = value;
+			if(current > value) {
+				this.__removeInactive(current - value);
+			} else if(value > current) {
+				var object;
+				var _g1 = 0;
+				var _g = value - current;
+				while(_g1 < _g) {
+					var i = _g1++;
+					object = this.create();
+					if(object != null) {
+						this.__pool.set(object,false);
+						this.__inactiveObjectList.add(object);
+						this.inactiveObjects++;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+		return value;
+	}
+	,__class__: lime_utils_ObjectPool_$openfl_$geom_$Matrix
 };
 var List = function() {
 	this.length = 0;
@@ -3457,6 +4023,676 @@ List.prototype = {
 	}
 	,__class__: List
 };
+var openfl_geom_Matrix = function(a,b,c,d,tx,ty) {
+	if(ty == null) {
+		ty = 0;
+	}
+	if(tx == null) {
+		tx = 0;
+	}
+	if(d == null) {
+		d = 1;
+	}
+	if(c == null) {
+		c = 0;
+	}
+	if(b == null) {
+		b = 0;
+	}
+	if(a == null) {
+		a = 1;
+	}
+	this.a = a;
+	this.b = b;
+	this.c = c;
+	this.d = d;
+	this.tx = tx;
+	this.ty = ty;
+};
+$hxClasses["openfl.geom.Matrix"] = openfl_geom_Matrix;
+openfl_geom_Matrix.__name__ = ["openfl","geom","Matrix"];
+openfl_geom_Matrix.prototype = {
+	a: null
+	,b: null
+	,c: null
+	,d: null
+	,tx: null
+	,ty: null
+	,__array: null
+	,clone: function() {
+		return new openfl_geom_Matrix(this.a,this.b,this.c,this.d,this.tx,this.ty);
+	}
+	,concat: function(m) {
+		var a1 = this.a * m.a + this.b * m.c;
+		this.b = this.a * m.b + this.b * m.d;
+		this.a = a1;
+		var c1 = this.c * m.a + this.d * m.c;
+		this.d = this.c * m.b + this.d * m.d;
+		this.c = c1;
+		var tx1 = this.tx * m.a + this.ty * m.c + m.tx;
+		this.ty = this.tx * m.b + this.ty * m.d + m.ty;
+		this.tx = tx1;
+	}
+	,copyColumnFrom: function(column,vector3D) {
+		if(column > 2) {
+			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
+		} else if(column == 0) {
+			this.a = vector3D.x;
+			this.c = vector3D.y;
+		} else if(column == 1) {
+			this.b = vector3D.x;
+			this.d = vector3D.y;
+		} else {
+			this.tx = vector3D.x;
+			this.ty = vector3D.y;
+		}
+	}
+	,copyColumnTo: function(column,vector3D) {
+		if(column > 2) {
+			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
+		} else if(column == 0) {
+			vector3D.x = this.a;
+			vector3D.y = this.c;
+			vector3D.z = 0;
+		} else if(column == 1) {
+			vector3D.x = this.b;
+			vector3D.y = this.d;
+			vector3D.z = 0;
+		} else {
+			vector3D.x = this.tx;
+			vector3D.y = this.ty;
+			vector3D.z = 1;
+		}
+	}
+	,copyFrom: function(sourceMatrix) {
+		this.a = sourceMatrix.a;
+		this.b = sourceMatrix.b;
+		this.c = sourceMatrix.c;
+		this.d = sourceMatrix.d;
+		this.tx = sourceMatrix.tx;
+		this.ty = sourceMatrix.ty;
+	}
+	,copyRowFrom: function(row,vector3D) {
+		if(row > 2) {
+			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
+		} else if(row == 0) {
+			this.a = vector3D.x;
+			this.c = vector3D.y;
+		} else if(row == 1) {
+			this.b = vector3D.x;
+			this.d = vector3D.y;
+		} else {
+			this.tx = vector3D.x;
+			this.ty = vector3D.y;
+		}
+	}
+	,copyRowTo: function(row,vector3D) {
+		if(row > 2) {
+			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
+		} else if(row == 0) {
+			vector3D.x = this.a;
+			vector3D.y = this.b;
+			vector3D.z = this.tx;
+		} else if(row == 1) {
+			vector3D.x = this.c;
+			vector3D.y = this.d;
+			vector3D.z = this.ty;
+		} else {
+			vector3D.setTo(0,0,1);
+		}
+	}
+	,createBox: function(scaleX,scaleY,rotation,tx,ty) {
+		if(ty == null) {
+			ty = 0;
+		}
+		if(tx == null) {
+			tx = 0;
+		}
+		if(rotation == null) {
+			rotation = 0;
+		}
+		if(rotation != 0) {
+			var cos = Math.cos(rotation);
+			var sin = Math.sin(rotation);
+			this.a = cos * scaleX;
+			this.b = sin * scaleY;
+			this.c = -sin * scaleX;
+			this.d = cos * scaleY;
+		} else {
+			this.a = scaleX;
+			this.b = 0;
+			this.c = 0;
+			this.d = scaleY;
+		}
+		this.tx = tx;
+		this.ty = ty;
+	}
+	,createGradientBox: function(width,height,rotation,tx,ty) {
+		if(ty == null) {
+			ty = 0;
+		}
+		if(tx == null) {
+			tx = 0;
+		}
+		if(rotation == null) {
+			rotation = 0;
+		}
+		this.a = width / 1638.4;
+		this.d = height / 1638.4;
+		if(rotation != 0) {
+			var cos = Math.cos(rotation);
+			var sin = Math.sin(rotation);
+			this.b = sin * this.d;
+			this.c = -sin * this.a;
+			this.a *= cos;
+			this.d *= cos;
+		} else {
+			this.b = 0;
+			this.c = 0;
+		}
+		this.tx = tx + width / 2;
+		this.ty = ty + height / 2;
+	}
+	,deltaTransformPoint: function(point) {
+		return new openfl_geom_Point(point.x * this.a + point.y * this.c,point.x * this.b + point.y * this.d);
+	}
+	,equals: function(matrix) {
+		if(matrix != null && this.tx == matrix.tx && this.ty == matrix.ty && this.a == matrix.a && this.b == matrix.b && this.c == matrix.c) {
+			return this.d == matrix.d;
+		} else {
+			return false;
+		}
+	}
+	,identity: function() {
+		this.a = 1;
+		this.b = 0;
+		this.c = 0;
+		this.d = 1;
+		this.tx = 0;
+		this.ty = 0;
+	}
+	,invert: function() {
+		var norm = this.a * this.d - this.b * this.c;
+		if(norm == 0) {
+			this.a = this.b = this.c = this.d = 0;
+			this.tx = -this.tx;
+			this.ty = -this.ty;
+		} else {
+			norm = 1.0 / norm;
+			var a1 = this.d * norm;
+			this.d = this.a * norm;
+			this.a = a1;
+			this.b *= -norm;
+			this.c *= -norm;
+			var tx1 = -this.a * this.tx - this.c * this.ty;
+			this.ty = -this.b * this.tx - this.d * this.ty;
+			this.tx = tx1;
+		}
+		return this;
+	}
+	,rotate: function(theta) {
+		var cos = Math.cos(theta);
+		var sin = Math.sin(theta);
+		var a1 = this.a * cos - this.b * sin;
+		this.b = this.a * sin + this.b * cos;
+		this.a = a1;
+		var c1 = this.c * cos - this.d * sin;
+		this.d = this.c * sin + this.d * cos;
+		this.c = c1;
+		var tx1 = this.tx * cos - this.ty * sin;
+		this.ty = this.tx * sin + this.ty * cos;
+		this.tx = tx1;
+	}
+	,scale: function(sx,sy) {
+		this.a *= sx;
+		this.b *= sy;
+		this.c *= sx;
+		this.d *= sy;
+		this.tx *= sx;
+		this.ty *= sy;
+	}
+	,setRotation: function(theta,scale) {
+		if(scale == null) {
+			scale = 1;
+		}
+		this.a = Math.cos(theta) * scale;
+		this.c = Math.sin(theta) * scale;
+		this.b = -this.c;
+		this.d = this.a;
+	}
+	,setTo: function(a,b,c,d,tx,ty) {
+		this.a = a;
+		this.b = b;
+		this.c = c;
+		this.d = d;
+		this.tx = tx;
+		this.ty = ty;
+	}
+	,to3DString: function(roundPixels) {
+		if(roundPixels == null) {
+			roundPixels = false;
+		}
+		if(roundPixels) {
+			return "matrix3d(" + this.a + ", " + this.b + ", 0, 0, " + this.c + ", " + this.d + ", 0, 0, 0, 0, 1, 0, " + (this.tx | 0) + ", " + (this.ty | 0) + ", 0, 1)";
+		} else {
+			return "matrix3d(" + this.a + ", " + this.b + ", 0, 0, " + this.c + ", " + this.d + ", 0, 0, 0, 0, 1, 0, " + this.tx + ", " + this.ty + ", 0, 1)";
+		}
+	}
+	,toMozString: function() {
+		return "matrix(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + "px, " + this.ty + "px)";
+	}
+	,toString: function() {
+		return "matrix(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + ", " + this.ty + ")";
+	}
+	,transformPoint: function(pos) {
+		return new openfl_geom_Point(pos.x * this.a + pos.y * this.c + this.tx,pos.x * this.b + pos.y * this.d + this.ty);
+	}
+	,translate: function(dx,dy) {
+		this.tx += dx;
+		this.ty += dy;
+	}
+	,toArray: function(transpose) {
+		if(transpose == null) {
+			transpose = false;
+		}
+		if(this.__array == null) {
+			var this1 = new Float32Array(9);
+			this.__array = this1;
+		}
+		if(transpose) {
+			this.__array[0] = this.a;
+			this.__array[1] = this.b;
+			this.__array[2] = 0;
+			this.__array[3] = this.c;
+			this.__array[4] = this.d;
+			this.__array[5] = 0;
+			this.__array[6] = this.tx;
+			this.__array[7] = this.ty;
+			this.__array[8] = 1;
+		} else {
+			this.__array[0] = this.a;
+			this.__array[1] = this.c;
+			this.__array[2] = this.tx;
+			this.__array[3] = this.b;
+			this.__array[4] = this.d;
+			this.__array[5] = this.ty;
+			this.__array[6] = 0;
+			this.__array[7] = 0;
+			this.__array[8] = 1;
+		}
+		return this.__array;
+	}
+	,__cleanValues: function() {
+		this.a = Math.round(this.a * 1000) / 1000;
+		this.b = Math.round(this.b * 1000) / 1000;
+		this.c = Math.round(this.c * 1000) / 1000;
+		this.d = Math.round(this.d * 1000) / 1000;
+		this.tx = Math.round(this.tx * 10) / 10;
+		this.ty = Math.round(this.ty * 10) / 10;
+	}
+	,__toMatrix3: function() {
+		openfl_geom_Matrix.__matrix3.setTo(this.a,this.b,this.c,this.d,this.tx,this.ty);
+		return openfl_geom_Matrix.__matrix3;
+	}
+	,__transformInversePoint: function(point) {
+		var norm = this.a * this.d - this.b * this.c;
+		if(norm == 0) {
+			point.x = -this.tx;
+			point.y = -this.ty;
+		} else {
+			var px = 1.0 / norm * (this.c * (this.ty - point.y) + this.d * (point.x - this.tx));
+			point.y = 1.0 / norm * (this.a * (point.y - this.ty) + this.b * (this.tx - point.x));
+			point.x = px;
+		}
+	}
+	,__transformInverseX: function(px,py) {
+		var norm = this.a * this.d - this.b * this.c;
+		if(norm == 0) {
+			return -this.tx;
+		} else {
+			return 1.0 / norm * (this.c * (this.ty - py) + this.d * (px - this.tx));
+		}
+	}
+	,__transformInverseY: function(px,py) {
+		var norm = this.a * this.d - this.b * this.c;
+		if(norm == 0) {
+			return -this.ty;
+		} else {
+			return 1.0 / norm * (this.a * (py - this.ty) + this.b * (this.tx - px));
+		}
+	}
+	,__transformPoint: function(point) {
+		var px = point.x;
+		var py = point.y;
+		point.x = px * this.a + py * this.c + this.tx;
+		point.y = px * this.b + py * this.d + this.ty;
+	}
+	,__transformX: function(px,py) {
+		return px * this.a + py * this.c + this.tx;
+	}
+	,__transformY: function(px,py) {
+		return px * this.b + py * this.d + this.ty;
+	}
+	,__translateTransformed: function(px,py) {
+		this.tx = px * this.a + py * this.c + this.tx;
+		this.ty = px * this.b + py * this.d + this.ty;
+	}
+	,__class__: openfl_geom_Matrix
+};
+var openfl_geom_ColorTransform = function(redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier,redOffset,greenOffset,blueOffset,alphaOffset) {
+	if(alphaOffset == null) {
+		alphaOffset = 0;
+	}
+	if(blueOffset == null) {
+		blueOffset = 0;
+	}
+	if(greenOffset == null) {
+		greenOffset = 0;
+	}
+	if(redOffset == null) {
+		redOffset = 0;
+	}
+	if(alphaMultiplier == null) {
+		alphaMultiplier = 1;
+	}
+	if(blueMultiplier == null) {
+		blueMultiplier = 1;
+	}
+	if(greenMultiplier == null) {
+		greenMultiplier = 1;
+	}
+	if(redMultiplier == null) {
+		redMultiplier = 1;
+	}
+	this.redMultiplier = redMultiplier;
+	this.greenMultiplier = greenMultiplier;
+	this.blueMultiplier = blueMultiplier;
+	this.alphaMultiplier = alphaMultiplier;
+	this.redOffset = redOffset;
+	this.greenOffset = greenOffset;
+	this.blueOffset = blueOffset;
+	this.alphaOffset = alphaOffset;
+};
+$hxClasses["openfl.geom.ColorTransform"] = openfl_geom_ColorTransform;
+openfl_geom_ColorTransform.__name__ = ["openfl","geom","ColorTransform"];
+openfl_geom_ColorTransform.prototype = {
+	alphaMultiplier: null
+	,alphaOffset: null
+	,blueMultiplier: null
+	,blueOffset: null
+	,greenMultiplier: null
+	,greenOffset: null
+	,redMultiplier: null
+	,redOffset: null
+	,concat: function(second) {
+		this.redMultiplier *= second.redMultiplier;
+		this.greenMultiplier *= second.greenMultiplier;
+		this.blueMultiplier *= second.blueMultiplier;
+		this.alphaMultiplier *= second.alphaMultiplier;
+		this.redOffset = second.redMultiplier * this.redOffset + second.redOffset;
+		this.greenOffset = second.greenMultiplier * this.greenOffset + second.greenOffset;
+		this.blueOffset = second.blueMultiplier * this.blueOffset + second.blueOffset;
+		this.alphaOffset = second.alphaMultiplier * this.alphaOffset + second.alphaOffset;
+	}
+	,toString: function() {
+		return "(redMultiplier=" + this.redMultiplier + ", greenMultiplier=" + this.greenMultiplier + ", blueMultiplier=" + this.blueMultiplier + ", alphaMultiplier=" + this.alphaMultiplier + ", redOffset=" + this.redOffset + ", greenOffset=" + this.greenOffset + ", blueOffset=" + this.blueOffset + ", alphaOffset=" + this.alphaOffset + ")";
+	}
+	,__clone: function() {
+		return new openfl_geom_ColorTransform(this.redMultiplier,this.greenMultiplier,this.blueMultiplier,this.alphaMultiplier,this.redOffset,this.greenOffset,this.blueOffset,this.alphaOffset);
+	}
+	,__copyFrom: function(ct) {
+		this.redMultiplier = ct.redMultiplier;
+		this.greenMultiplier = ct.greenMultiplier;
+		this.blueMultiplier = ct.blueMultiplier;
+		this.alphaMultiplier = ct.alphaMultiplier;
+		this.redOffset = ct.redOffset;
+		this.greenOffset = ct.greenOffset;
+		this.blueOffset = ct.blueOffset;
+		this.alphaOffset = ct.alphaOffset;
+	}
+	,__combine: function(ct) {
+		this.redMultiplier *= ct.redMultiplier;
+		this.greenMultiplier *= ct.greenMultiplier;
+		this.blueMultiplier *= ct.blueMultiplier;
+		this.alphaMultiplier *= ct.alphaMultiplier;
+		this.redOffset += ct.redOffset;
+		this.greenOffset += ct.greenOffset;
+		this.blueOffset += ct.blueOffset;
+		this.alphaOffset += ct.alphaOffset;
+	}
+	,__identity: function() {
+		this.redMultiplier = 1;
+		this.greenMultiplier = 1;
+		this.blueMultiplier = 1;
+		this.alphaMultiplier = 1;
+		this.redOffset = 0;
+		this.greenOffset = 0;
+		this.blueOffset = 0;
+		this.alphaOffset = 0;
+	}
+	,__equals: function(ct,skipAlphaMultiplier) {
+		if(skipAlphaMultiplier == null) {
+			skipAlphaMultiplier = false;
+		}
+		if(ct != null && this.redMultiplier == ct.redMultiplier && this.greenMultiplier == ct.greenMultiplier && this.blueMultiplier == ct.blueMultiplier && (skipAlphaMultiplier || this.alphaMultiplier == ct.alphaMultiplier) && this.redOffset == ct.redOffset && this.greenOffset == ct.greenOffset && this.blueOffset == ct.blueOffset) {
+			return this.alphaOffset == ct.alphaOffset;
+		} else {
+			return false;
+		}
+	}
+	,__isDefault: function() {
+		if(this.redMultiplier == 1 && this.greenMultiplier == 1 && this.blueMultiplier == 1 && this.alphaMultiplier == 1 && this.redOffset == 0 && this.greenOffset == 0 && this.blueOffset == 0) {
+			return this.alphaOffset == 0;
+		} else {
+			return false;
+		}
+	}
+	,get_color: function() {
+		return (this.redOffset | 0) << 16 | (this.greenOffset | 0) << 8 | (this.blueOffset | 0);
+	}
+	,set_color: function(value) {
+		this.redOffset = value >> 16 & 255;
+		this.greenOffset = value >> 8 & 255;
+		this.blueOffset = value & 255;
+		this.redMultiplier = 0;
+		this.greenMultiplier = 0;
+		this.blueMultiplier = 0;
+		return this.get_color();
+	}
+	,__toLimeColorMatrix: function() {
+		if(openfl_geom_ColorTransform.__limeColorMatrix == null) {
+			var this1 = new Float32Array(20);
+			openfl_geom_ColorTransform.__limeColorMatrix = this1;
+		}
+		openfl_geom_ColorTransform.__limeColorMatrix[0] = this.redMultiplier;
+		openfl_geom_ColorTransform.__limeColorMatrix[4] = this.redOffset / 255;
+		openfl_geom_ColorTransform.__limeColorMatrix[6] = this.greenMultiplier;
+		openfl_geom_ColorTransform.__limeColorMatrix[9] = this.greenOffset / 255;
+		openfl_geom_ColorTransform.__limeColorMatrix[12] = this.blueMultiplier;
+		openfl_geom_ColorTransform.__limeColorMatrix[14] = this.blueOffset / 255;
+		openfl_geom_ColorTransform.__limeColorMatrix[18] = this.alphaMultiplier;
+		openfl_geom_ColorTransform.__limeColorMatrix[19] = this.alphaOffset / 255;
+		return openfl_geom_ColorTransform.__limeColorMatrix;
+	}
+	,__class__: openfl_geom_ColorTransform
+};
+var Game = function(game) {
+	this.nextScene = null;
+	this.isSeneChange = false;
+	this.ingame = new openfl_display_Sprite();
+	this.game = game;
+	Game.display = game.stage;
+	Module.setup();
+	game.stage.set_frameRate(60);
+	game.set_scrollRect(new openfl_geom_Rectangle(0,0,Game.width,Game.height));
+	haxe_Log.trace(game.stage.get_width(),{ fileName : "Game.hx", lineNumber : 47, className : "Game", methodName : "new", customParams : [game.stage.get_height()]});
+	this.setup();
+	Game.screenSp.addChild(new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/changeScene.png")));
+	Game.screenSp.set_x(-400);
+	game.addChild(this.ingame);
+	game.addChild(Game.screenSp);
+	game.stage.addEventListener("enterFrame",$bind(this,this.update));
+	Game.showScreen(15,false);
+};
+$hxClasses["Game"] = Game;
+Game.__name__ = ["Game"];
+Game.hideScreen = function(time,isWait_) {
+	Game.isWait = isWait_;
+	if(time <= 0) {
+		time = 1;
+	}
+	Game.screenSeq.clear();
+	Game.screenSeq.addSequence(function() {
+		Game.screenSp.set_alpha(1);
+		Game.screenSp.set_x(-1600);
+	});
+	var _g1 = 0;
+	var _g = time;
+	while(_g1 < _g) {
+		var i = _g1++;
+		Game.screenSeq.addSequence(function() {
+			var _g2 = Game.screenSp;
+			_g2.set_x(_g2.get_x() + 1200 / time);
+		});
+		Game.screenSeq.waitSequence(1);
+	}
+};
+Game.showScreen = function(time,isWait_) {
+	Game.isWait = isWait_;
+	if(time <= 0) {
+		time = 1;
+	}
+	Game.screenSeq.clear();
+	Game.screenSeq.addSequence(function() {
+		Game.screenSp.set_x(-400);
+	});
+	var _g1 = 0;
+	var _g = time;
+	while(_g1 < _g) {
+		var i = _g1++;
+		Game.screenSeq.addSequence(function() {
+			var _g2 = Game.screenSp;
+			_g2.set_x(_g2.get_x() + 1200 / time);
+		});
+		Game.screenSeq.waitSequence(1);
+	}
+	Game.screenSeq.addSequence(function() {
+		Game.screenSp.set_alpha(0);
+	});
+};
+Game.prototype = {
+	game: null
+	,ingame: null
+	,isSeneChange: null
+	,nextScene: null
+	,setup: function() {
+		Game.scene = new scene_Title();
+		this.ingame.addChild(Game.scene.container);
+	}
+	,update: function(e) {
+		haxe_Log.trace(openfl_system_System.get_totalMemory(),{ fileName : "Game.hx", lineNumber : 65, className : "Game", methodName : "update"});
+		if(!Game.screenSeq.run() && Game.isWait) {
+			return;
+		}
+		if(!this.isSeneChange) {
+			this.nextScene = Game.scene.update();
+			if(Game.scene != this.nextScene) {
+				Game.hideScreen(5,true);
+				this.isSeneChange = true;
+			}
+		} else {
+			this.ingame.removeChild(Game.scene.container);
+			this.ingame.addChild(this.nextScene.container);
+			Game.scene = this.nextScene;
+			Game.showScreen(5,true);
+			this.isSeneChange = false;
+		}
+	}
+	,changeScene: function(nextScene) {
+		if(Game.scene != nextScene) {
+			Game.hideScreen(5,true);
+			this.isSeneChange = false;
+		} else {
+			Game.showScreen(5,false);
+			Game.scene = nextScene;
+		}
+		var tmp = this.isSeneChange;
+		Game.scene = nextScene;
+	}
+	,__class__: Game
+};
+var HxOverrides = function() { };
+$hxClasses["HxOverrides"] = HxOverrides;
+HxOverrides.__name__ = ["HxOverrides"];
+HxOverrides.strDate = function(s) {
+	var _g = s.length;
+	switch(_g) {
+	case 8:
+		var k = s.split(":");
+		var d = new Date();
+		d["setTime"](0);
+		d["setUTCHours"](k[0]);
+		d["setUTCMinutes"](k[1]);
+		d["setUTCSeconds"](k[2]);
+		return d;
+	case 10:
+		var k1 = s.split("-");
+		return new Date(k1[0],k1[1] - 1,k1[2],0,0,0);
+	case 19:
+		var k2 = s.split(" ");
+		var y = k2[0].split("-");
+		var t = k2[1].split(":");
+		return new Date(y[0],y[1] - 1,y[2],t[0],t[1],t[2]);
+	default:
+		throw new js__$Boot_HaxeError("Invalid date format : " + s);
+	}
+};
+HxOverrides.cca = function(s,index) {
+	var x = s.charCodeAt(index);
+	if(x != x) {
+		return undefined;
+	}
+	return x;
+};
+HxOverrides.substr = function(s,pos,len) {
+	if(len == null) {
+		len = s.length;
+	} else if(len < 0) {
+		if(pos == 0) {
+			len = s.length + len;
+		} else {
+			return "";
+		}
+	}
+	return s.substr(pos,len);
+};
+HxOverrides.remove = function(a,obj) {
+	var i = a.indexOf(obj);
+	if(i == -1) {
+		return false;
+	}
+	a.splice(i,1);
+	return true;
+};
+HxOverrides.iter = function(a) {
+	return { cur : 0, arr : a, hasNext : function() {
+		return this.cur < this.arr.length;
+	}, next : function() {
+		return this.arr[this.cur++];
+	}};
+};
+var Lambda = function() { };
+$hxClasses["Lambda"] = Lambda;
+Lambda.__name__ = ["Lambda"];
+Lambda.array = function(it) {
+	var a = [];
+	var i = $iterator(it)();
+	while(i.hasNext()) {
+		var i1 = i.next();
+		a.push(i1);
+	}
+	return a;
+};
 var _$List_ListNode = function(item,next) {
 	this.item = item;
 	this.next = next;
@@ -3502,7 +4738,7 @@ ManifestResources.init = function(config) {
 	var data;
 	var manifest;
 	var library;
-	data = "{\"name\":null,\"assets\":\"aoy4:pathy14:img%2Fchip.pngy4:sizei1016y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y17:img%2Fc_arrow.pngR2i890R3R4R5R7R6tgoR0y18:img%2Fc_cursor.pngR2i932R3R4R5R8R6tgoR0y16:img%2Fc_hero.pngR2i2867R3R4R5R9R6tgoR0y18:img%2Fpanorama.pngR2i95417R3R4R5R10R6tgoR0y18:img%2Fstage0-0.csvR2i6036R3y4:TEXTR5R11R6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	data = "{\"name\":null,\"assets\":\"aoy4:pathy21:img%2FchangeScene.pngy4:sizei19011y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y14:img%2Fchip.pngR2i2440R3R4R5R7R6tgoR0y17:img%2Fc_arrow.pngR2i890R3R4R5R8R6tgoR0y17:img%2Fc_block.pngR2i1034R3R4R5R9R6tgoR0y17:img%2Fc_boss1.pngR2i1252R3R4R5R10R6tgoR0y18:img%2Fc_cursor.pngR2i932R3R4R5R11R6tgoR0y16:img%2Fc_hero.pngR2i2867R3R4R5R12R6tgoR0y17:img%2Fc_slime.pngR2i1050R3R4R5R13R6tgoR0y18:img%2Fc_slime2.pngR2i1178R3R4R5R14R6tgoR0y16:img%2Fi_face.bmpR2i4102R3R4R5R15R6tgoR0y16:img%2Fi_face.pngR2i984R3R4R5R16R6tgoR0y18:img%2Fpanorama.pngR2i95417R3R4R5R17R6tgoR0y26:img%2Fstage%2Fstage0-0.csvR2i6036R3y4:TEXTR5R18R6tgoR0y26:img%2Fstage%2Fstage1-1.csvR2i917R3R19R5R20R6tgoR0y26:img%2Fstage%2Fstage1-2.csvR2i2025R3R19R5R21R6tgoR0y26:img%2Fstage%2Fstage1-3.csvR2i4022R3R19R5R22R6tgoR0y26:img%2Fstage%2Fstage1-4.csvR2i3325R3R19R5R23R6tgoR0y26:img%2Fstage%2Fstage1-5.csvR2i1020R3R19R5R24R6tgoR0y15:img%2Ftitle.pngR2i148196R3R4R5R25R6tgoR0y18:img%2Fu_window.pngR2i959R3R4R5R26R6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
 	manifest = lime_utils_AssetManifest.parse(data,rootPath);
 	library = lime_utils_AssetLibrary.fromManifest(manifest);
 	lime_utils_Assets.registerLibrary("default",library);
@@ -3517,6 +4753,10 @@ Math.__name__ = ["Math"];
 var Module = function() { };
 $hxClasses["Module"] = Module;
 Module.__name__ = ["Module"];
+Module.setup = function() {
+	Game.display.addEventListener("keyDown",Module.keyDown);
+	Game.display.addEventListener("keyUp",Module.keyUp);
+};
 Module.isKeyDown = function(keyCode) {
 	return Module.keyInputBuffer[keyCode];
 };
@@ -3548,14 +4788,13 @@ Module.isKeyDoubleClick = function(keyCode) {
 	}
 	return false;
 };
+Module.toRad = function(degree) {
+	return Math.PI / 180 * degree;
+};
 Module.rotateVector2D = function(v,degree) {
 	var mat = new openfl_geom_Matrix();
-	mat.rotate(Math.PI / 180 * degree);
+	mat.rotate(Module.toRad(degree));
 	return mat.deltaTransformPoint(v);
-};
-Module.setup = function() {
-	Game.display.addEventListener("keyDown",Module.keyDown);
-	Game.display.addEventListener("keyUp",Module.keyUp);
 };
 Module.keyDown = function(e) {
 	try {
@@ -3641,67 +4880,6 @@ Reflect.makeVarArgs = function(f) {
 		var a = Array.prototype.slice.call(arguments);
 		return f(a);
 	};
-};
-var Sequencer = function(loop) {
-	this.runningIndex = 0;
-	this.index = 0;
-	this.waitingCount = 0;
-	this.waitTerms = [];
-	this.functions = [[]];
-	this.loop = loop;
-};
-$hxClasses["Sequencer"] = Sequencer;
-Sequencer.__name__ = ["Sequencer"];
-Sequencer.prototype = {
-	functions: null
-	,waitTerms: null
-	,waitingCount: null
-	,index: null
-	,runningIndex: null
-	,loop: null
-	,isEnd: null
-	,loopEnd: function() {
-		this.loop = false;
-	}
-	,addSequence: function(func) {
-		this.isEnd = false;
-		this.functions[this.index].push(func);
-	}
-	,waitSequence: function(term) {
-		this.isEnd = false;
-		this.waitTerms.push(term);
-		this.index++;
-		this.functions.push([]);
-	}
-	,run: function() {
-		if(this.waitingCount == 0) {
-			var _g = 0;
-			var _g1 = this.functions[this.runningIndex];
-			while(_g < _g1.length) {
-				var func = _g1[_g];
-				++_g;
-				func();
-			}
-			if(this.runningIndex == this.functions.length - 1) {
-				if(this.loop) {
-					this.waitingCount = 0;
-					this.index = 0;
-					this.runningIndex = 0;
-					return false;
-				}
-				this.isEnd = true;
-				return true;
-			}
-			this.waitingCount = this.waitTerms[this.runningIndex];
-		} else {
-			this.waitingCount--;
-			if(this.waitingCount == 0) {
-				this.runningIndex++;
-			}
-		}
-		return false;
-	}
-	,__class__: Sequencer
 };
 var Std = function() { };
 $hxClasses["Std"] = Std;
@@ -3988,1018 +5166,257 @@ _$UInt_UInt_$Impl_$.toFloat = function(this1) {
 		return $int + 0.0;
 	}
 };
-var actor_Actor = function(x,y,w,h) {
-	this.hitStop = 0;
-	this.shellCount = 0;
-	this.invincible = 0;
-	this.knockBack = 0;
-	this.ATK = 0;
-	this.HP = 1;
-	this.state = new actor_State();
-	this.lostCount = 60;
-	this.jumped = 2;
-	this.t = 0;
-	this.a = 0;
-	this.v = new openfl_geom_Point(0,0);
-	this.hitBox = new openfl_display_Sprite();
+var Window = function(x,y,width,height,text,cursor) {
+	this.fc = 0;
+	this.cursor = false;
+	this.textFormat = new openfl_text_TextFormat();
+	this.textField = new openfl_text_TextField();
+	this.frame = new openfl_display_Sprite();
 	this.container = new openfl_display_Sprite();
-	this.container.set_x(x);
-	this.container.set_y(y);
-	this.container.addChild(this.hitBox);
-	this.hitBox.get_graphics().beginFill(this.cr,1);
-	this.hitBox.get_graphics().drawRect(0,0,w,h);
-	this.divW = Math.floor((this.hitBox.get_width() - 1) / Game.GRID_SIZE) + 2;
-	this.divH = Math.floor((this.hitBox.get_height() - 1) / Game.GRID_SIZE) + 2;
+	this.cursor = cursor;
+	if(width < 1) {
+		width = 1;
+	}
+	if(height < 1) {
+		height = 1;
+	}
+	this.inside = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/u_window.png"));
+	this.inside.set_scrollRect(new openfl_geom_Rectangle(0,0,14,14));
+	this.inside.set_x(2);
+	this.inside.set_y(2);
+	this.inside.set_alpha(1);
+	this.textFormat.size = 9;
+	this.textFormat.align = 0;
+	this.textFormat.color = 6566400;
+	this.textField.setTextFormat(this.textFormat);
+	this.textField.set_text(text);
+	this.resize(width,height);
+	this.setX(x);
+	this.setY(y);
+	this.container.addChild(this.inside);
+	this.container.addChild(this.frame);
+	this.container.addChild(this.textField);
 };
-$hxClasses["actor.Actor"] = actor_Actor;
-actor_Actor.__name__ = ["actor","Actor"];
-actor_Actor.prototype = {
+$hxClasses["Window"] = Window;
+Window.__name__ = ["Window"];
+Window.prototype = {
 	container: null
-	,hitBox: null
-	,v: null
-	,a: null
-	,t: null
-	,cr: null
-	,divW: null
-	,divH: null
-	,jumped: null
-	,lostCount: null
-	,state: null
-	,HP: null
-	,ATK: null
-	,knockBack: null
-	,invincible: null
-	,shellCount: null
-	,hitStop: null
-	,update: function() {
-		if(this.hitStop > 0) {
-			this.hitStop--;
-			return true;
-		}
-		if(this.HP <= 0) {
-			if(this.lostCount == 60) {
-				this.hitStop = 15;
-			}
-			this.state.act = actor_State.actions.DEAD;
-			this.lostCount--;
-		}
-		this.invincible--;
-		this.a = this.isLimitBreak() ? 0.001 : 0.02;
-		this.t++;
-		this.v.y += this.a * this.t;
-		if(this.isLimitBreak() || this.knockBack > 0) {
-			this.state.command = actor_State.commands.FREE;
-		}
-		if(this.knockBack > 0) {
-			this.knockBack--;
-		}
-		if(this.state.act == actor_State.actions.DEAD) {
-			this.state.command = actor_State.commands.FREE;
-		}
-		if(this.checkCommand(actor_State.commands.RIGHT)) {
-			var tmp = this.v.x;
-			this.v.x = 1;
-			this.v.x += tmp;
-		}
-		if(this.checkCommand(actor_State.commands.LEFT)) {
-			var tmp1 = this.v.x;
-			this.v.x = -1;
-			this.v.x += tmp1;
-		}
-		if(this.checkCommand(actor_State.commands.UP)) {
-			if(this.jumped > 0) {
-				this.t = 0;
-				this.v.y = -4.5;
-			}
-			this.state.command = this.state.command & ~actor_State.commands.UP;
-		}
-		if(this.v.y > Game.MAX_SPEED) {
-			this.v.y -= this.a * this.t;
-		}
-		this.hitTerrain();
-		if(this.checkCommand(actor_State.commands.RIGHT)) {
-			this.v.x *= 0.5;
-		}
-		if(this.checkCommand(actor_State.commands.LEFT)) {
-			this.v.x *= 0.5;
-		}
-		this.v.x *= 0.99;
-		if(0.001 <= this.v.x && this.v.x < 0.001) {
-			this.v.x = 0;
-		}
-		if(0.001 <= this.v.y && this.v.y < 0.001) {
-			this.v.y = 0;
-		}
-		if(this.isLimitBreak()) {
-			this.shellCount--;
-		}
-		return this.lostCount > 0;
+	,frame: null
+	,inside: null
+	,textField: null
+	,textFormat: null
+	,width: null
+	,height: null
+	,x: null
+	,y: null
+	,cursor: null
+	,fc: null
+	,getX: function() {
+		return this.x;
 	}
-	,addForce: function(f,reset) {
-		if(reset) {
-			this.v = new openfl_geom_Point(0,0);
-			this.t = 0;
-		}
-		this.v = this.v.add(f);
+	,getY: function() {
+		return this.y;
 	}
-	,getVelocity: function() {
-		return this.v;
+	,setX: function(x) {
+		this.x = x;
+		this.container.set_x(x - this.width / 2 + 16);
 	}
-	,getAirTime: function() {
-		return this.t;
+	,setY: function(y) {
+		this.y = y;
+		this.container.set_y(y - this.height - 32);
 	}
-	,hitAffect: function(e) {
+	,resize: function(width,height) {
+		this.width = width;
+		this.height = height;
+		this.container.set_x(-width / 2 + 16);
+		this.container.set_y(this.cursor ? -height - 32 : -height - 16);
+		this.inside.set_width(width - 4);
+		this.inside.set_height(height - 4);
+		this.textField.set_width(width);
+		this.textField.set_height(height);
+		this.drawFrame();
 	}
-	,isLimitBreak: function() {
-		return this.shellCount > 0;
-	}
-	,inRange: function(x,y,radius) {
-		return (x - this.container.get_x()) * (x - this.container.get_x()) + (y - this.container.get_y()) * (y - this.container.get_y()) <= radius * radius;
-	}
-	,checkCommand: function(check) {
-		return (this.state.command & check) == check;
-	}
-	,hitTerrain: function() {
-		var isBuried = true;
-		while(isBuried) {
-			isBuried = false;
-			var _g1 = 0;
-			var _g = this.divW;
-			while(_g1 < _g) {
-				var j = _g1++;
-				var under = Game.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + this.hitBox.get_height());
-				if(under != "0") {
-					var _g2 = this.container;
-					_g2.set_y(_g2.get_y() - 0.1);
-					isBuried = true;
-					break;
-				}
-			}
-		}
-		var isBuried1 = true;
-		while(isBuried1) {
-			isBuried1 = false;
-			var _g11 = 0;
-			var _g3 = this.divW;
-			while(_g11 < _g3) {
-				var j1 = _g11++;
-				var over = Game.stage.getIDByFloat(this.container.get_x(),this.container.get_y());
-				if(over != "0") {
-					var _g21 = this.container;
-					_g21.set_y(_g21.get_y() + 0.2);
-					isBuried1 = true;
-					break;
-				}
-			}
-		}
-		var divV = 8;
-		var tmp = new openfl_geom_Point(this.v.x / divV,this.v.y / divV);
-		var hitX = false;
-		var hitY = false;
-		var _g12 = 0;
-		var _g4 = divV;
-		while(_g12 < _g4) {
-			var i = _g12++;
-			if(!hitY) {
-				var _g22 = this.container;
-				_g22.set_y(_g22.get_y() + tmp.y);
-				var _g31 = 0;
-				var _g23 = this.divW;
-				while(_g31 < _g23) {
-					var j2 = _g31++;
-					var over1 = Game.stage.getIDByFloat(this.container.get_x() + j2 * this.hitBox.get_width() / (this.divW - 1),this.container.get_y());
-					var under1 = Game.stage.getIDByFloat(this.container.get_x() + j2 * this.hitBox.get_width() / (this.divW - 1),this.container.get_y() + this.hitBox.get_height());
-					if(under1 == "-1") {
-						this.HP = 0;
-						return;
-					}
-					if(under1 != "0") {
-						this.jumped = 2;
-					} else {
-						this.jumped = -1;
-					}
-					if(over1 != "0" || under1 != "0") {
-						var _g41 = this.container;
-						_g41.set_y(_g41.get_y() - tmp.y);
-						this.v.x *= this.isLimitBreak() ? 0.999 : 0.8;
-						this.v.y *= this.isLimitBreak() ? -0.99 : 0;
-						this.t = 0;
-						hitY = true;
-						break;
-					}
-				}
-			}
-			if(!hitX) {
-				var _g24 = this.container;
-				_g24.set_x(_g24.get_x() + tmp.x);
-				var _g32 = 0;
-				var _g25 = this.divH;
-				while(_g32 < _g25) {
-					var j3 = _g32++;
-					var left = Game.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + j3 * this.hitBox.get_height() / (this.divH - 1));
-					var right = Game.stage.getIDByFloat(this.container.get_x() + this.hitBox.get_width(),this.container.get_y() + j3 * this.hitBox.get_height() / (this.divH - 1));
-					if(left != "0" || right != "0") {
-						var _g42 = this.container;
-						_g42.set_x(_g42.get_x() - tmp.x);
-						this.v.x *= this.isLimitBreak() ? -0.99 : -0.1;
-						hitX = true;
-						break;
-					}
-				}
-			}
-			if(hitX && hitY) {
-				break;
-			}
+	,drawFrame: function() {
+		this.frame.get_graphics().lineStyle(1,6566400,1.0);
+		this.frame.get_graphics().moveTo(0,0);
+		this.frame.get_graphics().lineTo(this.width - 5,0);
+		this.frame.get_graphics().lineTo(this.width,5);
+		this.frame.get_graphics().lineTo(this.width,this.height);
+		this.frame.get_graphics().lineTo(5,this.height);
+		this.frame.get_graphics().lineTo(0,this.height - 5);
+		this.frame.get_graphics().lineTo(0,0);
+		if(this.cursor) {
+			this.frame.get_graphics().beginFill(15663103);
+			this.frame.get_graphics().moveTo(this.width / 2 - 4,this.height + 3);
+			this.frame.get_graphics().lineTo(this.width / 2 + 4,this.height + 3);
+			this.frame.get_graphics().lineTo(this.width / 2,this.height + 11);
+			this.frame.get_graphics().lineTo(this.width / 2 - 4,this.height + 3);
 		}
 	}
-	,affectedByTerrain: function() {
+	,draw: function() {
+		if(this.container.parent != null) {
+			this.fadeIn();
+		} else {
+			this.fadeOut();
+		}
 	}
-	,__class__: actor_Actor
+	,fadeIn: function() {
+		if(this.container.get_alpha() < 1) {
+			var _g = this.container;
+			_g.set_alpha(_g.get_alpha() + 0.25);
+		}
+	}
+	,fadeOut: function() {
+		if(this.container.get_alpha() > 0) {
+			var _g = this.container;
+			_g.set_alpha(_g.get_alpha() - 0.25);
+		}
+	}
+	,__class__: Window
 };
-var actor_enemy_BulletGenerator = function() {
+var animator_AnimationFactory = function() { };
+$hxClasses["animator.AnimationFactory"] = animator_AnimationFactory;
+animator_AnimationFactory.__name__ = ["animator","AnimationFactory"];
+animator_AnimationFactory.get = function(animationName) {
+	var result = new animator_animation_Death();
+	if(result == null) {
+		return new animator_animation_Animation();
+	}
+	return result;
 };
-$hxClasses["actor.enemy.BulletGenerator"] = actor_enemy_BulletGenerator;
-actor_enemy_BulletGenerator.__name__ = ["actor","enemy","BulletGenerator"];
-actor_enemy_BulletGenerator.prototype = {
-	bullets: null
-	,container: null
-	,setup: function(bullets_,container_) {
-		this.bullets = bullets_;
-		this.container = container_;
-	}
-	,addBullet: function(pattern,fromX,fromY,toX,toY,thrust) {
-		switch(pattern) {
-		case 1:
-			this.addBullet1(fromX,fromY,toX,toY,thrust);
-			break;
-		case 2:
-			this.addBullet2(fromX,fromY,toX,toY,thrust);
-			break;
-		default:
-		}
-	}
-	,addBullet1: function(fromX,fromY,toX,toY,thrust) {
-		if(this.bullets == null || this.container == null) {
-			return;
-		}
-		var v = new openfl_geom_Point(toX - fromX,toY - fromY);
-		v.normalize(thrust);
-		var b = new actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,180,false,false);
-		this.bullets.add(b);
-		this.container.addChild(b.container);
-	}
-	,addBullet2: function(fromX,fromY,toX,toY,thrust) {
-		if(this.bullets == null || this.container == null) {
-			return;
-		}
-		var v = new openfl_geom_Point(toX - fromX,toY - fromY);
-		v.normalize(thrust);
-		var v2 = Module.rotateVector2D(v,-10);
-		var b = new actor_enemy_Bullet(fromX,fromY + 3,v2.x,v2.y,0,0,1,180,false,false);
-		this.bullets.add(b);
-		this.container.addChild(b.container);
-		var b1 = new actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,180,false,false);
-		this.bullets.add(b1);
-		this.container.addChild(b1.container);
-		v2 = Module.rotateVector2D(v,10);
-		var b2 = new actor_enemy_Bullet(fromX,fromY + 3,v2.x,v2.y,0,0,1,180,false,false);
-		this.bullets.add(b2);
-		this.container.addChild(b2.container);
-	}
-	,__class__: actor_enemy_BulletGenerator
+var animator_Animator = function(target) {
+	this.animations = new List();
+	this.target = target;
 };
-var actor_enemy_EnemyGenerator = function() {
-};
-$hxClasses["actor.enemy.EnemyGenerator"] = actor_enemy_EnemyGenerator;
-actor_enemy_EnemyGenerator.__name__ = ["actor","enemy","EnemyGenerator"];
-actor_enemy_EnemyGenerator.prototype = {
-	enemies: null
-	,bullets: null
-	,container: null
-	,setup: function(enemies,bullets,container) {
-		this.enemies = enemies;
-		this.bullets = bullets;
-		this.container = container;
+$hxClasses["animator.Animator"] = animator_Animator;
+animator_Animator.__name__ = ["animator","Animator"];
+animator_Animator.prototype = {
+	target: null
+	,animations: null
+	,add: function(animationName,x,y) {
+		var animation = animator_AnimationFactory.get(animationName);
+		this.animations.add(animation);
+		animation.container.set_x(x);
+		animation.container.set_y(y);
+		this.target.addChild(animation.container);
 	}
-	,setEnemy: function(enemyNum,x,y) {
-		var e = null;
-		switch(enemyNum) {
-		case 11:
-			e = new actor_enemy_Gunner(x,y,this.bullets);
-			break;
-		case 12:
-			e = new actor_enemy_Walker(x,y,this.bullets);
-			break;
-		case 13:
-			e = new actor_enemy_Trampoline(x,y);
-			break;
-		case 14:
-			e = new actor_enemy_Bloomer(x,y,this.enemies);
-			break;
-		default:
-		}
-		return this.addEnemy(e);
-	}
-	,addEnemy: function(e) {
-		if(e == null) {
-			return false;
-		}
-		this.container.addChild(e.container);
-		this.enemies.add(e);
-		return true;
-	}
-	,__class__: actor_enemy_EnemyGenerator
-};
-var actor_ActorMediator = function() {
-	this.bullets = new List();
-	this.deadMan = new List();
-	this.enemies = new List();
-	this.container = new openfl_display_Sprite();
-	actor_ActorMediator.bulletGenerator.setup(this.bullets,this.container);
-	actor_ActorMediator.enemyGenerator.setup(this.enemies,this.bullets,this.container);
-	var _g1 = 0;
-	var _g = Game.stage.getHeight();
-	while(_g1 < _g) {
-		var y = _g1++;
-		var _g3 = 0;
-		var _g2 = Game.stage.getWidth();
-		while(_g3 < _g2) {
-			var x = _g3++;
-			if(actor_ActorMediator.enemyGenerator.setEnemy(Std.parseInt(Game.stage.map[y][x]),Game.GRID_SIZE * x,Game.GRID_SIZE * y)) {
-				Game.stage.map[y][x] = "0";
-			}
-		}
-	}
-	this.pm = new actor_PlayerManager(this.container,this.deadMan);
-};
-$hxClasses["actor.ActorMediator"] = actor_ActorMediator;
-actor_ActorMediator.__name__ = ["actor","ActorMediator"];
-actor_ActorMediator.prototype = {
-	container: null
-	,pm: null
-	,enemies: null
-	,deadMan: null
-	,bullets: null
-	,update: function() {
-		this.enemyControl();
-		this.bulletControl();
-		var end = this.pm.playerControl();
-		var it = new _$List_ListIterator(this.deadMan.h);
+	,draw: function() {
+		var it = new _$List_ListIterator(this.animations.h);
 		while(it.hasNext()) {
-			var d = it.next();
-			if(!d.update()) {
-				this.container.removeChild(d.container);
-				this.deadMan.remove(d);
+			var anime = it.next();
+			if(!anime.draw()) {
+				this.animations.remove(anime);
+				this.target.removeChild(anime.container);
 			}
 		}
 	}
-	,getSubject: function() {
-		return this.pm.subject;
-	}
-	,bulletControl: function() {
-		var it = new _$List_ListIterator(this.bullets.h);
+	,removeAll: function() {
+		var it = new _$List_ListIterator(this.animations.h);
 		while(it.hasNext()) {
-			var b = it.next();
-			b.update();
-			var p = this.pm.pc;
-			var it1 = new _$List_ListIterator(this.pm.npc.h);
-			while(true) {
-				if(!b.dead && b.container.hitTestObject(p.hitBox)) {
-					b.hitAffect(p);
-				}
-				if(!it1.hasNext()) {
-					break;
-				}
-				p = it1.next();
-			}
-			if(b.dead) {
-				this.container.removeChild(b.container);
-				this.bullets.remove(b);
-			}
+			var anime = it.next();
+			this.animations.remove(anime);
+			this.target.removeChild(anime.container);
 		}
 	}
-	,enemyControl: function() {
-		var eIt = new _$List_ListIterator(this.enemies.h);
-		while(eIt.hasNext()) {
-			var e = eIt.next();
-			if(Math.abs(e.container.get_x() - this.pm.subject.x) > Game.width / 2) {
-				continue;
-			}
-			var p = this.pm.pc;
-			var pIt = new _$List_ListIterator(this.pm.npc.h);
-			while(!(e.invincible > 0 || e.state.act == actor_State.actions.DEAD)) {
-				if(e.hitBox.hitTestObject(p.hitBox)) {
-					p.hitAffect(e);
-					e.hitAffect(p);
-				}
-				if(!pIt.hasNext()) {
-					break;
-				}
-				p = pIt.next();
-			}
-			e.update();
-			if(e.state.act == actor_State.actions.DEAD) {
-				this.deadMan.add(e);
-				this.enemies.remove(e);
-			}
-		}
-	}
-	,__class__: actor_ActorMediator
+	,__class__: animator_Animator
 };
-var actor_Aiming = function() {
-	this.controlAng = 60;
-	this.degree = 0;
+var animator_animation_Animation = function() {
 	this.container = new openfl_display_Sprite();
-	var bitmap = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/c_cursor.png"));
-	var _g = bitmap;
-	_g.set_x(_g.get_x() - 2);
-	this.container.addChild(bitmap);
 };
-$hxClasses["actor.Aiming"] = actor_Aiming;
-actor_Aiming.__name__ = ["actor","Aiming"];
-actor_Aiming.prototype = {
+$hxClasses["animator.animation.Animation"] = animator_animation_Animation;
+animator_animation_Animation.__name__ = ["animator","animation","Animation"];
+animator_animation_Animation.prototype = {
 	container: null
-	,degree: null
-	,controlAng: null
-	,update: function(x,y,dir) {
-		this.degree = 270 + this.controlAng * dir;
-		this.container.set_x(x + Math.cos(Math.PI / 180 * this.degree) * 64);
-		this.container.set_y(y + Math.sin(Math.PI / 180 * this.degree) * 64);
+	,lifeTime: null
+	,draw: function() {
+		return this.lifeTime > 0;
 	}
-	,__class__: actor_Aiming
+	,__class__: animator_animation_Animation
 };
-var actor_Player = function(x,y,w,h) {
-	this.cr = 255;
-	actor_Actor.call(this,x,y,w,h);
-	this.spSheet = new spritesheet_Hero(this);
-	this.HP = 1;
-	this.ATK = 0;
-};
-$hxClasses["actor.Player"] = actor_Player;
-actor_Player.__name__ = ["actor","Player"];
-actor_Player.__super__ = actor_Actor;
-actor_Player.prototype = $extend(actor_Actor.prototype,{
-	spSheet: null
-	,update: function() {
-		this.spSheet.update();
-		return actor_Actor.prototype.update.call(this);
-	}
-	,hitAffect: function(e) {
-		var f = new openfl_geom_Point(e.container.get_x() - this.container.get_x(),e.container.get_y() - this.container.get_y());
-		var v = e.getVelocity();
-		f.normalize(3);
-		f.add(v);
-		e.addForce(f,this.isLimitBreak());
-		e.knockBack = 6;
-		e.hitStop = 6;
-		e.invincible = 30;
-		e.HP -= !this.isLimitBreak() ? this.ATK : this.ATK + 1;
-	}
-	,__class__: actor_Player
-});
-var actor_PlayerManager = function(parent,deadMan) {
-	this.npc = new List();
-	this.subject = new openfl_geom_Point();
-	this.aiming = new actor_Aiming();
-	this.shell = null;
-	this.isExtincted = false;
-	this.deadMan = deadMan;
-	this.container = parent;
-	var pos = Game.stage.getPlayerPos();
+var animator_animation_Death = function() {
+	this.dusts = new List();
+	animator_animation_Animation.call(this);
+	this.container.set_blendMode(0);
 	var _g = 0;
-	while(_g < 3) {
+	while(_g < 12) {
 		var i = _g++;
-		var p = new actor_Player(pos.x + 16 * (i - 1),pos.y,12,16);
-		this.container.addChild(p.container);
-		this.npc.add(p);
+		var dust = new animator_animation_Particle(0.7 * (Math.random() - 0.5),-0.7 * Math.random(),0,0.2,3.5,"rect",16772659);
+		this.container.addChild(dust.container);
+		this.dusts.add(dust);
 	}
-	this.pc = this.npc.pop();
-	this.nowLeader = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/c_arrow.png"));
-	this.container.addChild(this.nowLeader);
+	this.lifeTime = 50;
 };
-$hxClasses["actor.PlayerManager"] = actor_PlayerManager;
-actor_PlayerManager.__name__ = ["actor","PlayerManager"];
-actor_PlayerManager.prototype = {
-	container: null
-	,isExtincted: null
-	,shell: null
-	,aiming: null
-	,nowLeader: null
-	,deadMan: null
-	,subject: null
-	,pc: null
-	,npc: null
-	,playerControl: function() {
-		if(!this.isExtincted) {
-			if(this.pcControl()) {
-				this.subjectUpdate();
-			}
-			this.npcControl();
+$hxClasses["animator.animation.Death"] = animator_animation_Death;
+animator_animation_Death.__name__ = ["animator","animation","Death"];
+animator_animation_Death.__super__ = animator_animation_Animation;
+animator_animation_Death.prototype = $extend(animator_animation_Animation.prototype,{
+	dusts: null
+	,draw: function() {
+		this.container.set_alpha(this.lifeTime / 30);
+		var it_head = this.dusts.h;
+		while(it_head != null) {
+			var val = it_head.item;
+			it_head = it_head.next;
+			var dust = val;
+			dust.update();
 		}
-		return this.isExtincted;
+		this.lifeTime--;
+		haxe_Log.trace("ok",{ fileName : "Death.hx", lineNumber : 36, className : "animator.animation.Death", methodName : "draw"});
+		return animator_animation_Animation.prototype.draw.call(this);
 	}
-	,pcControl: function() {
-		this.nowLeader.set_x(this.pc.container.get_x() - 2);
-		this.nowLeader.set_y(this.pc.container.get_y() - 16);
-		if(Module.isKeyPressed(81)) {
-			this.isExtincted = false;
-			this.generatePlayer(48,48);
-		}
-		this.pc.state.command = actor_State.commands.FREE;
-		if(Module.isKeyDoubleClick(16)) {
-			this.changeControl(false,false);
-		}
-		if(this.pc.state.act != actor_State.actions.DEAD) {
-			if(Module.getKeyHoldTime(16) == 30) {
-				this.generatePlayer(this.pc.container.get_x(),this.pc.container.get_y());
-			}
-			if(Module.isKeyPressed(65)) {
-				this.gather();
-			}
-			if(Module.isKeyPressed(83)) {
-				this.disband();
-			}
-			if(Module.isKeyDown(40) && this.shell != null) {
-				if(this.aiming.controlAng < 180) {
-					this.aiming.controlAng += 1.5;
-				}
-			} else if(Module.isKeyDown(38) && this.shell != null) {
-				if(this.aiming.controlAng > 0) {
-					this.aiming.controlAng -= 1.5;
-				}
-			}
-			if(Module.isKeyDown(37)) {
-				this.pc.state.command = this.pc.state.command + actor_State.commands.LEFT;
-				if(this.shell == null) {
-					this.pc.state.dir = actor_State.directions.LEFT;
-				}
-			}
-			if(Module.isKeyDown(39)) {
-				this.pc.state.command = this.pc.state.command + actor_State.commands.RIGHT;
-				if(this.shell == null) {
-					this.pc.state.dir = actor_State.directions.RIGHT;
-				}
-			}
-			if(Module.isKeyPressed(90)) {
-				this.pc.state.command = this.pc.state.command + actor_State.commands.UP;
-			}
-			if(this.shell == null) {
-				if(Module.isKeyPressed(88)) {
-					this.throwing();
-				}
-			} else {
-				if(Module.isKeyDoubleClick(39)) {
-					this.pc.state.dir = actor_State.directions.RIGHT;
-				}
-				if(Module.isKeyDoubleClick(37)) {
-					this.pc.state.dir = actor_State.directions.LEFT;
-				}
-				if(!Module.isKeyDown(88)) {
-					this.throwing();
-				}
-				if(Module.isKeyDown(67)) {
-					this.cancelThrowing(this.shell.state.act = actor_State.actions.TRAIL);
-				}
-			}
-		}
-		var isAlive = this.pc.update();
-		if(!isAlive) {
-			this.container.removeChild(this.pc.container);
-			this.changeControl(true,false);
-		}
-		return isAlive;
-	}
-	,npcControl: function() {
-		var it = new _$List_ListIterator(this.npc.h);
-		var previous = this.pc;
-		while(it.hasNext()) {
-			var p = it.next();
-			p.update();
-			p.state.command = actor_State.commands.FREE;
-			if(p.state.act == actor_State.actions.DEAD) {
-				this.deadMan.add(p);
-				this.npc.remove(p);
-			}
-			if(p.state.act == actor_State.actions.TRAIL) {
-				if(previous.container.get_y() - p.container.get_y() <= -24) {
-					p.state.command = p.state.command + actor_State.commands.UP;
-				}
-				if(previous.container.get_x() - p.container.get_x() >= 16) {
-					p.state.command = p.state.command + actor_State.commands.RIGHT;
-					p.state.dir = actor_State.directions.RIGHT;
-				}
-				if(previous.container.get_x() - p.container.get_x() <= -16) {
-					p.state.command = p.state.command + actor_State.commands.LEFT;
-					p.state.dir = actor_State.directions.LEFT;
-				}
-				previous = p;
-			}
-		}
-		if(this.shell != null) {
-			this.aiming.update(this.pc.container.get_x(),this.pc.container.get_y(),this.pc.state.dir);
-			this.shell.addForce(new openfl_geom_Point(0,0),true);
-			this.shell.container.set_x(this.pc.container.get_x() - 6 * this.pc.state.dir);
-			this.shell.container.set_y(this.pc.container.get_y() - 8);
-			this.shell.state.dir = this.pc.state.dir;
-			if(this.shell.state.act == actor_State.actions.DEAD) {
-				this.cancelThrowing(actor_State.actions.DEAD);
-			}
-		}
-	}
-	,subjectUpdate: function() {
-		this.subject.setTo(this.pc.container.get_x(),this.pc.container.get_y() - 48);
-		if(this.subject.x < Game.width / 2 / this.container.parent.get_scaleX()) {
-			var tmp = Game.width / 2;
-			var tmp1 = this.container.parent.get_scaleX();
-			this.subject.x = tmp / tmp1;
-		}
-		if(this.subject.x > Game.stage.getWidth() * 16 - Game.width / 2 / this.container.parent.get_scaleX()) {
-			var tmp2 = Game.stage.getWidth() * 16;
-			var tmp3 = Game.width / 2 / this.container.parent.get_scaleX();
-			this.subject.x = tmp2 - tmp3;
-		}
-		if(this.subject.y < Game.height / 2 / this.container.parent.get_scaleY()) {
-			var tmp4 = Game.height / 2;
-			var tmp5 = this.container.parent.get_scaleY();
-			this.subject.y = tmp4 / tmp5;
-		}
-		if(this.subject.y > Game.stage.getHeight() * 16 - Game.height / 2 / this.container.parent.get_scaleY()) {
-			var tmp6 = Game.stage.getHeight() * 16;
-			var tmp7 = Game.height / 2 / this.container.parent.get_scaleY();
-			this.subject.y = tmp6 - tmp7;
-		}
-	}
-	,throwing: function() {
-		if(this.shell == null) {
-			var it = new _$List_ListIterator(this.npc.h);
-			while(it.hasNext()) {
-				var p = it.next();
-				var inside = new openfl_geom_Point(this.pc.container.get_x() - p.container.get_x(),this.pc.container.get_y() - p.container.get_y());
-				if(-20 < inside.x && inside.x < 20 && (-20 < inside.y && inside.y < 20)) {
-					this.shell = p;
-					this.shell.state.act = actor_State.actions.HOLD;
-					this.container.addChild(this.aiming.container);
-					break;
-				}
-			}
-		} else {
-			var v = new openfl_geom_Point(this.aiming.container.get_x() - this.shell.container.get_x(),this.aiming.container.get_y() - this.shell.container.get_y());
-			v.normalize(Game.FC_VELOCITY + 1);
-			v.add(this.pc.getVelocity());
-			this.shell.addForce(v,true);
-			this.shell.shellCount = 30;
-			this.cancelThrowing(actor_State.actions.WAIT);
-		}
-	}
-	,cancelThrowing: function(action) {
-		this.shell.container.set_x(this.pc.container.get_x());
-		this.shell.container.set_y(this.pc.container.get_y() - 8);
-		this.shell.state.act = action;
-		this.shell = null;
-		this.container.removeChild(this.aiming.container);
-	}
-	,gather: function() {
-		var it = new _$List_ListIterator(this.npc.h);
-		while(it.hasNext()) {
-			var p = it.next();
-			p.state.act = actor_State.actions.TRAIL;
-		}
-	}
-	,disband: function() {
-		var it = new _$List_ListIterator(this.npc.h);
-		while(it.hasNext()) {
-			var p = it.next();
-			p.state.act = actor_State.actions.WAIT;
-		}
-	}
-	,changeControl: function(dead,reverse) {
-		if(this.npc.length == 0) {
-			if(dead) {
-				this.isExtincted = true;
-			}
-			return;
-		}
-		if(this.shell != null) {
-			this.cancelThrowing(actor_State.actions.TRAIL);
-		}
-		if(!dead) {
-			this.pc.state.act = actor_State.actions.WAIT;
-			if(reverse) {
-				this.npc.push(this.pc);
-			} else {
-				this.npc.add(this.pc);
-			}
-		}
-		if(reverse) {
-			this.pc = this.npc.last();
-			this.npc.remove(this.pc);
-		} else {
-			this.pc = this.npc.pop();
-		}
-		this.pc.addForce(new openfl_geom_Point(0,-1),false);
-		var it = new _$List_ListIterator(this.npc.h);
-		while(it.hasNext()) {
-			var p = it.next();
-			p.state.act = actor_State.actions.WAIT;
-			if(this.pc.inRange(p.container.get_x(),p.container.get_y(),32)) {
-				p.state.act = actor_State.actions.TRAIL;
-			}
-		}
-	}
-	,generatePlayer: function(x,y) {
-		if(this.npc.length >= 2) {
-			var p = this.npc.first();
-			if(p.isLimitBreak()) {
-				return;
-			}
-			p.HP = 0;
-			this.deadMan.add(p);
-			this.npc.remove(p);
-		}
-		var p1 = new actor_Player(x,y,12,16);
-		this.container.addChild(p1.container);
-		p1.addForce(new openfl_geom_Point(0,-1),true);
-		this.npc.add(p1);
-	}
-	,__class__: actor_PlayerManager
-};
-var actor_State = function() {
-	this.dir = actor_State.directions.RIGHT;
-	this.act = actor_State.actions.TRAIL;
-	this.jumped = 0;
-	this.command = actor_State.commands.FREE;
-};
-$hxClasses["actor.State"] = actor_State;
-actor_State.__name__ = ["actor","State"];
-actor_State.prototype = {
-	command: null
-	,jumped: null
-	,act: null
-	,dir: null
-	,__class__: actor_State
-};
-var actor_enemy_Enemy = function(x,y,w,h) {
-	actor_Actor.call(this,x,y,w,h);
-	this.ATK = 0;
-};
-$hxClasses["actor.enemy.Enemy"] = actor_enemy_Enemy;
-actor_enemy_Enemy.__name__ = ["actor","enemy","Enemy"];
-actor_enemy_Enemy.__super__ = actor_Actor;
-actor_enemy_Enemy.prototype = $extend(actor_Actor.prototype,{
-	hitAffect: function(e) {
-		var f = new openfl_geom_Point(e.container.get_x() - this.container.get_x(),e.container.get_y() - this.container.get_y());
-		var v = e.getVelocity();
-		f.normalize(3);
-		f.add(v);
-		e.addForce(f,this.isLimitBreak());
-		e.knockBack = 6;
-		e.hitStop = 6;
-		e.invincible = 30;
-		e.HP -= !this.isLimitBreak() ? this.ATK : this.ATK + 1;
-	}
-	,__class__: actor_enemy_Enemy
+	,__class__: animator_animation_Death
 });
-var actor_enemy_Bloomer = function(x,y,enemies) {
-	this.seq = new Sequencer(true);
-	var _gthis = this;
-	this.cr = 16711680;
-	actor_enemy_Enemy.call(this,x,y,16,16);
-	this.ATK = 0;
-	this.enemies = enemies;
-	this.seq.waitSequence(180);
-	this.seq.addSequence(function() {
-		_gthis.bloom();
-	});
-};
-$hxClasses["actor.enemy.Bloomer"] = actor_enemy_Bloomer;
-actor_enemy_Bloomer.__name__ = ["actor","enemy","Bloomer"];
-actor_enemy_Bloomer.__super__ = actor_enemy_Enemy;
-actor_enemy_Bloomer.prototype = $extend(actor_enemy_Enemy.prototype,{
-	seq: null
-	,enemies: null
-	,bloom: function() {
-		var v = new openfl_geom_Point(0,-5);
-		var _g = 0;
-		while(_g < 5) {
-			var i = _g++;
-			var e = new actor_enemy_Pollen(this.container.get_x() + this.hitBox.get_width() / 2,this.container.get_y());
-			this.container.parent.addChild(e.container);
-			this.enemies.add(e);
-			e.addForce(Module.rotateVector2D(v,(i - 2) * 5),true);
-		}
+var animator_animation_Particle = function(vx,vy,ax,ay,size,type,color) {
+	if(color == null) {
+		color = 0;
 	}
-	,update: function() {
-		if(this.state.act != actor_State.actions.DEAD) {
-			this.seq.run();
-		}
-		return actor_enemy_Enemy.prototype.update.call(this);
+	if(type == null) {
+		type = "circle";
 	}
-	,__class__: actor_enemy_Bloomer
-});
-var actor_enemy_Bullet = function(x,y,vx,vy,ax,ay,ATK,lifetime,reflect,through) {
-	this.through = false;
-	this.reflect = false;
-	this.t = -1;
-	this.dead = false;
+	if(size == null) {
+		size = 1;
+	}
+	if(ay == null) {
+		ay = 0;
+	}
+	if(ax == null) {
+		ax = 0;
+	}
+	if(vy == null) {
+		vy = 0;
+	}
+	if(vx == null) {
+		vx = 0;
+	}
+	this.t = 0;
 	this.container = new openfl_display_Sprite();
-	this.container.set_x(x);
-	this.container.set_y(y);
 	this.v = new openfl_geom_Point(vx,vy);
 	this.a = new openfl_geom_Point(ax,ay);
-	this.ATK = ATK;
-	this.lifetime = lifetime;
-	this.reflect = reflect;
-	this.through = through;
-	this.container.get_graphics().beginFill(17408,1.0);
-	this.container.get_graphics().drawRect(0,0,3,3);
+	this.container.get_graphics().beginFill(color,1.0);
+	if(type == "rect") {
+		this.container.get_graphics().drawRect(0,0,size,size);
+	} else {
+		this.container.get_graphics().drawCircle(0,0,size);
+	}
 };
-$hxClasses["actor.enemy.Bullet"] = actor_enemy_Bullet;
-actor_enemy_Bullet.__name__ = ["actor","enemy","Bullet"];
-actor_enemy_Bullet.prototype = {
+$hxClasses["animator.animation.Particle"] = animator_animation_Particle;
+animator_animation_Particle.__name__ = ["animator","animation","Particle"];
+animator_animation_Particle.prototype = {
 	container: null
-	,ATK: null
-	,dead: null
 	,v: null
 	,a: null
 	,t: null
-	,lifetime: null
-	,reflect: null
-	,through: null
 	,update: function() {
+		this.v.x += this.a.x * this.t * 0.01;
+		this.v.y += this.a.y * this.t * 0.01;
+		var _g = this.container;
+		_g.set_x(_g.get_x() + this.v.x);
+		var _g1 = this.container;
+		_g1.set_y(_g1.get_y() + this.v.y);
 		this.t++;
-		if(this.t == this.lifetime) {
-			this.dead = true;
-		}
-		if(this.dead) {
-			return;
-		}
-		if(!this.speedCap(this.v)) {
-			this.v.x += this.a.x * this.t * 0.01;
-			this.v.y += this.a.y * this.t * 0.01;
-		}
-		var _g = Game.stage.getIDByFloat(this.container.get_x() + this.v.x,this.container.get_y());
-		if(_g != "0") {
-			if(this.reflect) {
-				this.v.x *= -1;
-			} else if(!this.through) {
-				this.dead = true;
-			}
-		}
-		var _g1 = Game.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + this.v.y);
-		if(_g1 != "0") {
-			if(this.reflect) {
-				this.v.y *= -1;
-			} else if(!this.through) {
-				this.dead = true;
-			}
-		}
-		var _g2 = this.container;
-		_g2.set_x(_g2.get_x() + this.v.x);
-		var _g21 = this.container;
-		_g21.set_y(_g21.get_y() + this.v.y);
 	}
-	,hitAffect: function(p) {
-		if(!this.through) {
-			this.dead = true;
-		}
-		if(p.invincible > 0) {
-			return;
-		}
-		var f = new openfl_geom_Point(this.container.get_x() - p.container.get_x() + p.container.get_width() / 2,this.container.get_y() - p.container.get_y() + p.container.get_height() / 2);
-		f.normalize(3);
-		f.add(this.v);
-		p.addForce(f,true);
-		p.knockBack = 6;
-		p.hitStop = 6;
-		p.invincible = 30;
-		p.HP -= this.ATK;
-	}
-	,speedCap: function(v) {
-		return v.x * v.x + v.y * v.y > Game.MAX_SPEED * Game.MAX_SPEED * 2.25;
-	}
-	,__class__: actor_enemy_Bullet
+	,__class__: animator_animation_Particle
 };
-var actor_enemy_Gunner = function(x,y,bullets) {
-	this.seq = new Sequencer(true);
-	var _gthis = this;
-	this.cr = 16711680;
-	actor_enemy_Enemy.call(this,x,y,12,16);
-	this.ATK = 1;
-	this.bullets = bullets;
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.FREE;
-	});
-	this.seq.waitSequence(30);
-	this.seq.addSequence(function() {
-		actor_ActorMediator.bulletGenerator.addBullet(1,_gthis.container.get_x(),_gthis.container.get_y(),_gthis.container.get_x() - 1,_gthis.container.get_y(),3);
-	});
-	this.seq.waitSequence(120);
-};
-$hxClasses["actor.enemy.Gunner"] = actor_enemy_Gunner;
-actor_enemy_Gunner.__name__ = ["actor","enemy","Gunner"];
-actor_enemy_Gunner.__super__ = actor_enemy_Enemy;
-actor_enemy_Gunner.prototype = $extend(actor_enemy_Enemy.prototype,{
-	seq: null
-	,bullets: null
-	,test: function() {
-		haxe_Log.trace("ok",{ fileName : "Gunner.hx", lineNumber : 35, className : "actor.enemy.Gunner", methodName : "test"});
-	}
-	,update: function() {
-		if(this.state.act != actor_State.actions.DEAD) {
-			this.seq.run();
-		}
-		return actor_enemy_Enemy.prototype.update.call(this);
-	}
-	,__class__: actor_enemy_Gunner
-});
-var actor_enemy_Pollen = function(x,y) {
-	this.seq = new Sequencer(true);
-	this.cr = 16755370;
-	actor_enemy_Enemy.call(this,x,y,5,5);
-	this.ATK = 1;
-	this.HP = 90;
-};
-$hxClasses["actor.enemy.Pollen"] = actor_enemy_Pollen;
-actor_enemy_Pollen.__name__ = ["actor","enemy","Pollen"];
-actor_enemy_Pollen.__super__ = actor_enemy_Enemy;
-actor_enemy_Pollen.prototype = $extend(actor_enemy_Enemy.prototype,{
-	seq: null
-	,update: function() {
-		this.HP--;
-		return actor_enemy_Enemy.prototype.update.call(this);
-	}
-	,__class__: actor_enemy_Pollen
-});
-var actor_enemy_Trampoline = function(x,y) {
-	this.cr = 15658496;
-	actor_enemy_Enemy.call(this,x,y,16,16);
-	this.ATK = 0;
-};
-$hxClasses["actor.enemy.Trampoline"] = actor_enemy_Trampoline;
-actor_enemy_Trampoline.__name__ = ["actor","enemy","Trampoline"];
-actor_enemy_Trampoline.__super__ = actor_enemy_Enemy;
-actor_enemy_Trampoline.prototype = $extend(actor_enemy_Enemy.prototype,{
-	update: function() {
-		this.knockBack = 0;
-		this.invincible = 0;
-		this.shellCount = 0;
-		this.hitStop = 0;
-		return true;
-	}
-	,hitAffect: function(e) {
-		e.addForce(new openfl_geom_Point(0,-8),true);
-	}
-	,__class__: actor_enemy_Trampoline
-});
-var actor_enemy_Walker = function(x,y,bullets) {
-	this.seq = new Sequencer(true);
-	var _gthis = this;
-	this.cr = 16711680;
-	actor_enemy_Enemy.call(this,x,y,12,16);
-	this.ATK = 1;
-	this.bullets = bullets;
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.LEFT;
-	});
-	this.seq.waitSequence(60);
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.FREE;
-	});
-	this.seq.waitSequence(10);
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.UP;
-	});
-	this.seq.waitSequence(60);
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.RIGHT;
-	});
-	this.seq.waitSequence(60);
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.FREE;
-	});
-	this.seq.waitSequence(10);
-	this.seq.addSequence(function() {
-		_gthis.state.command = actor_State.commands.UP;
-	});
-	this.seq.waitSequence(60);
-};
-$hxClasses["actor.enemy.Walker"] = actor_enemy_Walker;
-actor_enemy_Walker.__name__ = ["actor","enemy","Walker"];
-actor_enemy_Walker.__super__ = actor_enemy_Enemy;
-actor_enemy_Walker.prototype = $extend(actor_enemy_Enemy.prototype,{
-	seq: null
-	,bullets: null
-	,test: function() {
-		haxe_Log.trace("ok",{ fileName : "Walker.hx", lineNumber : 34, className : "actor.enemy.Walker", methodName : "test"});
-	}
-	,update: function() {
-		if(this.state.act != actor_State.actions.DEAD) {
-			this.seq.run();
-		}
-		return actor_enemy_Enemy.prototype.update.call(this);
-	}
-	,__class__: actor_enemy_Walker
-});
 var haxe_StackItem = $hxClasses["haxe.StackItem"] = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
 haxe_StackItem.CFunction.toString = $estr;
@@ -6729,6 +7146,16 @@ js_Boot.__resolveNativeClass = function(name) {
 var js_Browser = function() { };
 $hxClasses["js.Browser"] = js_Browser;
 js_Browser.__name__ = ["js","Browser"];
+js_Browser.getLocalStorage = function() {
+	try {
+		var s = window.localStorage;
+		s.getItem("");
+		return s;
+	} catch( e ) {
+		haxe_CallStack.lastException = e;
+		return null;
+	}
+};
 js_Browser.alert = function(v) {
 	window.alert(js_Boot.__string_rec(v,""));
 };
@@ -23670,290 +24097,6 @@ lime_math__$ColorMatrix_ColorMatrix_$Impl_$.get = function(this1,index) {
 lime_math__$ColorMatrix_ColorMatrix_$Impl_$.set = function(this1,index,value) {
 	return this1[index] = value;
 };
-var lime_math_Matrix3 = function(a,b,c,d,tx,ty) {
-	if(ty == null) {
-		ty = 0;
-	}
-	if(tx == null) {
-		tx = 0;
-	}
-	if(d == null) {
-		d = 1;
-	}
-	if(c == null) {
-		c = 0;
-	}
-	if(b == null) {
-		b = 0;
-	}
-	if(a == null) {
-		a = 1;
-	}
-	this.a = a;
-	this.b = b;
-	this.c = c;
-	this.d = d;
-	this.tx = tx;
-	this.ty = ty;
-};
-$hxClasses["lime.math.Matrix3"] = lime_math_Matrix3;
-lime_math_Matrix3.__name__ = ["lime","math","Matrix3"];
-lime_math_Matrix3.prototype = {
-	a: null
-	,b: null
-	,c: null
-	,d: null
-	,tx: null
-	,ty: null
-	,clone: function() {
-		return new lime_math_Matrix3(this.a,this.b,this.c,this.d,this.tx,this.ty);
-	}
-	,concat: function(m) {
-		var a1 = this.a * m.a + this.b * m.c;
-		this.b = this.a * m.b + this.b * m.d;
-		this.a = a1;
-		var c1 = this.c * m.a + this.d * m.c;
-		this.d = this.c * m.b + this.d * m.d;
-		this.c = c1;
-		var tx1 = this.tx * m.a + this.ty * m.c + m.tx;
-		this.ty = this.tx * m.b + this.ty * m.d + m.ty;
-		this.tx = tx1;
-	}
-	,copyColumnFrom: function(column,vector4) {
-		if(column > 2) {
-			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
-		} else if(column == 0) {
-			this.a = vector4.x;
-			this.c = vector4.y;
-		} else if(column == 1) {
-			this.b = vector4.x;
-			this.d = vector4.y;
-		} else {
-			this.tx = vector4.x;
-			this.ty = vector4.y;
-		}
-	}
-	,copyColumnTo: function(column,vector4) {
-		if(column > 2) {
-			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
-		} else if(column == 0) {
-			vector4.x = this.a;
-			vector4.y = this.c;
-			vector4.z = 0;
-		} else if(column == 1) {
-			vector4.x = this.b;
-			vector4.y = this.d;
-			vector4.z = 0;
-		} else {
-			vector4.x = this.tx;
-			vector4.y = this.ty;
-			vector4.z = 1;
-		}
-	}
-	,copyFrom: function(sourceMatrix3) {
-		this.a = sourceMatrix3.a;
-		this.b = sourceMatrix3.b;
-		this.c = sourceMatrix3.c;
-		this.d = sourceMatrix3.d;
-		this.tx = sourceMatrix3.tx;
-		this.ty = sourceMatrix3.ty;
-	}
-	,copyRowFrom: function(row,vector4) {
-		if(row > 2) {
-			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
-		} else if(row == 0) {
-			this.a = vector4.x;
-			this.c = vector4.y;
-		} else if(row == 1) {
-			this.b = vector4.x;
-			this.d = vector4.y;
-		} else {
-			this.tx = vector4.x;
-			this.ty = vector4.y;
-		}
-	}
-	,copyRowTo: function(row,vector4) {
-		if(row > 2) {
-			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
-		} else if(row == 0) {
-			vector4.x = this.a;
-			vector4.y = this.b;
-			vector4.z = this.tx;
-		} else if(row == 1) {
-			vector4.x = this.c;
-			vector4.y = this.d;
-			vector4.z = this.ty;
-		} else {
-			vector4.x = 0;
-			vector4.y = 0;
-			vector4.z = 1;
-		}
-	}
-	,createBox: function(scaleX,scaleY,rotation,tx,ty) {
-		if(ty == null) {
-			ty = 0;
-		}
-		if(tx == null) {
-			tx = 0;
-		}
-		if(rotation == null) {
-			rotation = 0;
-		}
-		this.a = scaleX;
-		this.d = scaleY;
-		this.b = rotation;
-		this.tx = tx;
-		this.ty = ty;
-	}
-	,createGradientBox: function(width,height,rotation,tx,ty) {
-		if(ty == null) {
-			ty = 0;
-		}
-		if(tx == null) {
-			tx = 0;
-		}
-		if(rotation == null) {
-			rotation = 0;
-		}
-		this.a = width / 1638.4;
-		this.d = height / 1638.4;
-		if(rotation != 0) {
-			var cos = Math.cos(rotation);
-			var sin = Math.sin(rotation);
-			this.b = sin * this.d;
-			this.c = -sin * this.a;
-			this.a *= cos;
-			this.d *= cos;
-		} else {
-			this.b = 0;
-			this.c = 0;
-		}
-		this.tx = tx + width / 2;
-		this.ty = ty + height / 2;
-	}
-	,equals: function(Matrix3) {
-		if(Matrix3 != null && this.tx == Matrix3.tx && this.ty == Matrix3.ty && this.a == Matrix3.a && this.b == Matrix3.b && this.c == Matrix3.c) {
-			return this.d == Matrix3.d;
-		} else {
-			return false;
-		}
-	}
-	,deltaTransformVector2: function(Vector2) {
-		return new lime_math_Vector2(Vector2.x * this.a + Vector2.y * this.c,Vector2.x * this.b + Vector2.y * this.d);
-	}
-	,identity: function() {
-		this.a = 1;
-		this.b = 0;
-		this.c = 0;
-		this.d = 1;
-		this.tx = 0;
-		this.ty = 0;
-	}
-	,invert: function() {
-		var norm = this.a * this.d - this.b * this.c;
-		if(norm == 0) {
-			this.a = this.b = this.c = this.d = 0;
-			this.tx = -this.tx;
-			this.ty = -this.ty;
-		} else {
-			norm = 1.0 / norm;
-			var a1 = this.d * norm;
-			this.d = this.a * norm;
-			this.a = a1;
-			this.b *= -norm;
-			this.c *= -norm;
-			var tx1 = -this.a * this.tx - this.c * this.ty;
-			this.ty = -this.b * this.tx - this.d * this.ty;
-			this.tx = tx1;
-		}
-		return this;
-	}
-	,mult: function(m) {
-		var result = new lime_math_Matrix3(this.a,this.b,this.c,this.d,this.tx,this.ty);
-		result.concat(m);
-		return result;
-	}
-	,rotate: function(theta) {
-		var cos = Math.cos(theta);
-		var sin = Math.sin(theta);
-		var a1 = this.a * cos - this.b * sin;
-		this.b = this.a * sin + this.b * cos;
-		this.a = a1;
-		var c1 = this.c * cos - this.d * sin;
-		this.d = this.c * sin + this.d * cos;
-		this.c = c1;
-		var tx1 = this.tx * cos - this.ty * sin;
-		this.ty = this.tx * sin + this.ty * cos;
-		this.tx = tx1;
-	}
-	,scale: function(sx,sy) {
-		this.a *= sx;
-		this.b *= sy;
-		this.c *= sx;
-		this.d *= sy;
-		this.tx *= sx;
-		this.ty *= sy;
-	}
-	,setRotation: function(theta,scale) {
-		if(scale == null) {
-			scale = 1;
-		}
-		this.a = Math.cos(theta) * scale;
-		this.c = Math.sin(theta) * scale;
-		this.b = -this.c;
-		this.d = this.a;
-	}
-	,setTo: function(a,b,c,d,tx,ty) {
-		this.a = a;
-		this.b = b;
-		this.c = c;
-		this.d = d;
-		this.tx = tx;
-		this.ty = ty;
-	}
-	,to3DString: function(roundPixels) {
-		if(roundPixels == null) {
-			roundPixels = false;
-		}
-		if(roundPixels) {
-			return "Matrix33d(" + this.a + ", " + this.b + ", " + "0, 0, " + this.c + ", " + this.d + ", " + "0, 0, 0, 0, 1, 0, " + (this.tx | 0) + ", " + (this.ty | 0) + ", 0, 1)";
-		} else {
-			return "Matrix33d(" + this.a + ", " + this.b + ", " + "0, 0, " + this.c + ", " + this.d + ", " + "0, 0, 0, 0, 1, 0, " + this.tx + ", " + this.ty + ", 0, 1)";
-		}
-	}
-	,toMozString: function() {
-		return "Matrix3(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + "px, " + this.ty + "px)";
-	}
-	,toString: function() {
-		return "Matrix3(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + ", " + this.ty + ")";
-	}
-	,transformVector2: function(pos) {
-		return new lime_math_Vector2(pos.x * this.a + pos.y * this.c + this.tx,pos.x * this.b + pos.y * this.d + this.ty);
-	}
-	,translate: function(dx,dy) {
-		this.tx += dx;
-		this.ty += dy;
-	}
-	,__cleanValues: function() {
-		this.a = Math.round(this.a * 1000) / 1000;
-		this.b = Math.round(this.b * 1000) / 1000;
-		this.c = Math.round(this.c * 1000) / 1000;
-		this.d = Math.round(this.d * 1000) / 1000;
-		this.tx = Math.round(this.tx * 10) / 10;
-		this.ty = Math.round(this.ty * 10) / 10;
-	}
-	,__transformX: function(pos) {
-		return pos.x * this.a + pos.y * this.c + this.tx;
-	}
-	,__transformY: function(pos) {
-		return pos.x * this.b + pos.y * this.d + this.ty;
-	}
-	,__translateTransformed: function(pos) {
-		this.tx = pos.x * this.a + pos.y * this.c + this.tx;
-		this.ty = pos.x * this.b + pos.y * this.d + this.ty;
-	}
-	,__class__: lime_math_Matrix3
-};
 var lime_math__$Matrix4_Matrix4_$Impl_$ = {};
 $hxClasses["lime.math._Matrix4.Matrix4_Impl_"] = lime_math__$Matrix4_Matrix4_$Impl_$;
 lime_math__$Matrix4_Matrix4_$Impl_$.__name__ = ["lime","math","_Matrix4","Matrix4_Impl_"];
@@ -31158,7 +31301,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 688812;
+	this.version = 478766;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
@@ -33569,206 +33712,6 @@ lime_utils_ObjectPool.prototype = {
 	}
 	,__class__: lime_utils_ObjectPool
 };
-var lime_utils_ObjectPool_$openfl_$geom_$Matrix = function(create,clean,size) {
-	if(create != null) {
-		this.create = create;
-	}
-	if(clean != null) {
-		this.clean = clean;
-	}
-	if(size != null) {
-		this.set_size(size);
-	}
-	this.__pool = new haxe_ds_ObjectMap();
-	this.activeObjects = 0;
-	this.inactiveObjects = 0;
-	this.__inactiveObject0 = null;
-	this.__inactiveObject1 = null;
-	this.__inactiveObjectList = new List();
-};
-$hxClasses["lime.utils.ObjectPool_openfl_geom_Matrix"] = lime_utils_ObjectPool_$openfl_$geom_$Matrix;
-lime_utils_ObjectPool_$openfl_$geom_$Matrix.__name__ = ["lime","utils","ObjectPool_openfl_geom_Matrix"];
-lime_utils_ObjectPool_$openfl_$geom_$Matrix.prototype = {
-	activeObjects: null
-	,inactiveObjects: null
-	,__inactiveObject0: null
-	,__inactiveObject1: null
-	,__inactiveObjectList: null
-	,__pool: null
-	,__size: null
-	,add: function(object) {
-		if(!this.__pool.exists(object)) {
-			this.__pool.set(object,false);
-			this.clean(object);
-			if(this.__inactiveObject0 == null) {
-				this.__inactiveObject0 = object;
-			} else if(this.__inactiveObject1 == null) {
-				this.__inactiveObject1 = object;
-			} else {
-				this.__inactiveObjectList.add(object);
-			}
-			this.inactiveObjects++;
-		}
-	}
-	,clean: function(object) {
-	}
-	,clear: function() {
-		this.__pool = new haxe_ds_ObjectMap();
-		this.activeObjects = 0;
-		this.inactiveObjects = 0;
-		this.__inactiveObject0 = null;
-		this.__inactiveObject1 = null;
-		this.__inactiveObjectList.clear();
-	}
-	,create: function() {
-		return null;
-	}
-	,get: function() {
-		var object = null;
-		if(this.inactiveObjects > 0) {
-			var object1 = null;
-			if(this.__inactiveObject0 != null) {
-				object1 = this.__inactiveObject0;
-				this.__inactiveObject0 = null;
-			} else if(this.__inactiveObject1 != null) {
-				object1 = this.__inactiveObject1;
-				this.__inactiveObject1 = null;
-			} else {
-				object1 = this.__inactiveObjectList.pop();
-				if(this.__inactiveObjectList.length > 0) {
-					this.__inactiveObject0 = this.__inactiveObjectList.pop();
-				}
-				if(this.__inactiveObjectList.length > 0) {
-					this.__inactiveObject1 = this.__inactiveObjectList.pop();
-				}
-			}
-			this.inactiveObjects--;
-			this.activeObjects++;
-			object = object1;
-		} else if(this.__size == null || this.activeObjects < this.__size) {
-			object = this.create();
-			if(object != null) {
-				this.__pool.set(object,true);
-				this.activeObjects++;
-			}
-		}
-		return object;
-	}
-	,release: function(object) {
-		this.activeObjects--;
-		if(this.__size == null || this.activeObjects + this.inactiveObjects < this.__size) {
-			this.clean(object);
-			if(this.__inactiveObject0 == null) {
-				this.__inactiveObject0 = object;
-			} else if(this.__inactiveObject1 == null) {
-				this.__inactiveObject1 = object;
-			} else {
-				this.__inactiveObjectList.add(object);
-			}
-			this.inactiveObjects++;
-		} else {
-			this.__pool.remove(object);
-		}
-	}
-	,__addInactive: function(object) {
-		if(this.__inactiveObject0 == null) {
-			this.__inactiveObject0 = object;
-		} else if(this.__inactiveObject1 == null) {
-			this.__inactiveObject1 = object;
-		} else {
-			this.__inactiveObjectList.add(object);
-		}
-		this.inactiveObjects++;
-	}
-	,__getInactive: function() {
-		var object = null;
-		if(this.__inactiveObject0 != null) {
-			object = this.__inactiveObject0;
-			this.__inactiveObject0 = null;
-		} else if(this.__inactiveObject1 != null) {
-			object = this.__inactiveObject1;
-			this.__inactiveObject1 = null;
-		} else {
-			object = this.__inactiveObjectList.pop();
-			if(this.__inactiveObjectList.length > 0) {
-				this.__inactiveObject0 = this.__inactiveObjectList.pop();
-			}
-			if(this.__inactiveObjectList.length > 0) {
-				this.__inactiveObject1 = this.__inactiveObjectList.pop();
-			}
-		}
-		this.inactiveObjects--;
-		this.activeObjects++;
-		return object;
-	}
-	,__removeInactive: function(count) {
-		if(count <= 0 || this.inactiveObjects == 0) {
-			return;
-		}
-		if(this.__inactiveObject0 != null) {
-			this.__pool.remove(this.__inactiveObject0);
-			this.__inactiveObject0 = null;
-			this.inactiveObjects--;
-			--count;
-		}
-		if(count == 0 || this.inactiveObjects == 0) {
-			return;
-		}
-		if(this.__inactiveObject1 != null) {
-			this.__pool.remove(this.__inactiveObject1);
-			this.__inactiveObject1 = null;
-			this.inactiveObjects--;
-			--count;
-		}
-		if(count == 0 || this.inactiveObjects == 0) {
-			return;
-		}
-		var _g_head = this.__inactiveObjectList.h;
-		while(_g_head != null) {
-			var val = _g_head.item;
-			_g_head = _g_head.next;
-			var object = val;
-			this.__pool.remove(object);
-			this.__inactiveObjectList.remove(object);
-			this.inactiveObjects--;
-			--count;
-			if(count == 0 || this.inactiveObjects == 0) {
-				return;
-			}
-		}
-	}
-	,get_size: function() {
-		return this.__size;
-	}
-	,set_size: function(value) {
-		if(value == null) {
-			this.__size = null;
-		} else {
-			var current = this.inactiveObjects + this.activeObjects;
-			this.__size = value;
-			if(current > value) {
-				this.__removeInactive(current - value);
-			} else if(value > current) {
-				var object;
-				var _g1 = 0;
-				var _g = value - current;
-				while(_g1 < _g) {
-					var i = _g1++;
-					object = this.create();
-					if(object != null) {
-						this.__pool.set(object,false);
-						this.__inactiveObjectList.add(object);
-						this.inactiveObjects++;
-					} else {
-						break;
-					}
-				}
-			}
-		}
-		return value;
-	}
-	,__class__: lime_utils_ObjectPool_$openfl_$geom_$Matrix
-};
 var lime_utils_ObjectPool_$openfl_$geom_$Point = function(create,clean,size) {
 	if(create != null) {
 		this.create = create;
@@ -35030,621 +34973,6 @@ openfl_display_MovieClip.prototype = $extend(openfl_display_Sprite.prototype,{
 	}
 	,__class__: openfl_display_MovieClip
 });
-var openfl__$Vector_Vector_$Impl_$ = {};
-$hxClasses["openfl._Vector.Vector_Impl_"] = openfl__$Vector_Vector_$Impl_$;
-openfl__$Vector_Vector_$Impl_$.__name__ = ["openfl","_Vector","Vector_Impl_"];
-openfl__$Vector_Vector_$Impl_$.concat = function(this1,a) {
-	return this1.concat(a);
-};
-openfl__$Vector_Vector_$Impl_$.copy = function(this1) {
-	return this1.copy();
-};
-openfl__$Vector_Vector_$Impl_$.get = function(this1,index) {
-	return this1.get(index);
-};
-openfl__$Vector_Vector_$Impl_$.indexOf = function(this1,x,from) {
-	if(from == null) {
-		from = 0;
-	}
-	return this1.indexOf(x,from);
-};
-openfl__$Vector_Vector_$Impl_$.insertAt = function(this1,index,element) {
-	this1.insertAt(index,element);
-};
-openfl__$Vector_Vector_$Impl_$.iterator = function(this1) {
-	return this1.iterator();
-};
-openfl__$Vector_Vector_$Impl_$.join = function(this1,sep) {
-	return this1.join(sep);
-};
-openfl__$Vector_Vector_$Impl_$.lastIndexOf = function(this1,x,from) {
-	if(from == null) {
-		from = 0;
-	}
-	return this1.lastIndexOf(x,from);
-};
-openfl__$Vector_Vector_$Impl_$.pop = function(this1) {
-	return this1.pop();
-};
-openfl__$Vector_Vector_$Impl_$.push = function(this1,x) {
-	return this1.push(x);
-};
-openfl__$Vector_Vector_$Impl_$.reverse = function(this1) {
-	return this1.reverse();
-};
-openfl__$Vector_Vector_$Impl_$.set = function(this1,index,value) {
-	return this1.set(index,value);
-};
-openfl__$Vector_Vector_$Impl_$.shift = function(this1) {
-	return this1.shift();
-};
-openfl__$Vector_Vector_$Impl_$.slice = function(this1,pos,end) {
-	return this1.slice(pos,end);
-};
-openfl__$Vector_Vector_$Impl_$.sort = function(this1,f) {
-	this1.sort(f);
-};
-openfl__$Vector_Vector_$Impl_$.splice = function(this1,pos,len) {
-	return this1.splice(pos,len);
-};
-openfl__$Vector_Vector_$Impl_$.toString = function(this1) {
-	if(this1 != null) {
-		return this1.toString();
-	} else {
-		return null;
-	}
-};
-openfl__$Vector_Vector_$Impl_$.unshift = function(this1,x) {
-	this1.unshift(x);
-};
-openfl__$Vector_Vector_$Impl_$.ofArray = function(a) {
-	var vector = openfl__$Vector_Vector_$Impl_$.toObjectVector(null);
-	var _g1 = 0;
-	var _g = a.length;
-	while(_g1 < _g) {
-		var i = _g1++;
-		vector.set(i,a[i]);
-	}
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.convert = function(v) {
-	return v;
-};
-openfl__$Vector_Vector_$Impl_$.toBoolVector = function(t,length,fixed) {
-	return new openfl__$Vector_BoolVector(length,fixed);
-};
-openfl__$Vector_Vector_$Impl_$.toIntVector = function(t,length,fixed) {
-	return new openfl__$Vector_IntVector(length,fixed);
-};
-openfl__$Vector_Vector_$Impl_$.toFloatVector = function(t,length,fixed) {
-	return new openfl__$Vector_FloatVector(length,fixed);
-};
-openfl__$Vector_Vector_$Impl_$.toFunctionVector = function(t,length,fixed) {
-	return new openfl__$Vector_FunctionVector(length,fixed);
-};
-openfl__$Vector_Vector_$Impl_$.toObjectVector = function(t,length,fixed) {
-	return new openfl__$Vector_ObjectVector(length,fixed);
-};
-openfl__$Vector_Vector_$Impl_$.fromBoolVector = function(vector) {
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.fromIntVector = function(vector) {
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.fromFloatVector = function(vector) {
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.fromFunctionVector = function(vector) {
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.fromObjectVector = function(vector) {
-	return vector;
-};
-openfl__$Vector_Vector_$Impl_$.get_fixed = function(this1) {
-	return this1.fixed;
-};
-openfl__$Vector_Vector_$Impl_$.set_fixed = function(this1,value) {
-	return this1.fixed = value;
-};
-openfl__$Vector_Vector_$Impl_$.get_length = function(this1) {
-	return this1.get_length();
-};
-openfl__$Vector_Vector_$Impl_$.set_length = function(this1,value) {
-	return this1.set_length(value);
-};
-var openfl_geom_Matrix = function(a,b,c,d,tx,ty) {
-	if(ty == null) {
-		ty = 0;
-	}
-	if(tx == null) {
-		tx = 0;
-	}
-	if(d == null) {
-		d = 1;
-	}
-	if(c == null) {
-		c = 0;
-	}
-	if(b == null) {
-		b = 0;
-	}
-	if(a == null) {
-		a = 1;
-	}
-	this.a = a;
-	this.b = b;
-	this.c = c;
-	this.d = d;
-	this.tx = tx;
-	this.ty = ty;
-};
-$hxClasses["openfl.geom.Matrix"] = openfl_geom_Matrix;
-openfl_geom_Matrix.__name__ = ["openfl","geom","Matrix"];
-openfl_geom_Matrix.prototype = {
-	a: null
-	,b: null
-	,c: null
-	,d: null
-	,tx: null
-	,ty: null
-	,__array: null
-	,clone: function() {
-		return new openfl_geom_Matrix(this.a,this.b,this.c,this.d,this.tx,this.ty);
-	}
-	,concat: function(m) {
-		var a1 = this.a * m.a + this.b * m.c;
-		this.b = this.a * m.b + this.b * m.d;
-		this.a = a1;
-		var c1 = this.c * m.a + this.d * m.c;
-		this.d = this.c * m.b + this.d * m.d;
-		this.c = c1;
-		var tx1 = this.tx * m.a + this.ty * m.c + m.tx;
-		this.ty = this.tx * m.b + this.ty * m.d + m.ty;
-		this.tx = tx1;
-	}
-	,copyColumnFrom: function(column,vector3D) {
-		if(column > 2) {
-			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
-		} else if(column == 0) {
-			this.a = vector3D.x;
-			this.c = vector3D.y;
-		} else if(column == 1) {
-			this.b = vector3D.x;
-			this.d = vector3D.y;
-		} else {
-			this.tx = vector3D.x;
-			this.ty = vector3D.y;
-		}
-	}
-	,copyColumnTo: function(column,vector3D) {
-		if(column > 2) {
-			throw new js__$Boot_HaxeError("Column " + column + " out of bounds (2)");
-		} else if(column == 0) {
-			vector3D.x = this.a;
-			vector3D.y = this.c;
-			vector3D.z = 0;
-		} else if(column == 1) {
-			vector3D.x = this.b;
-			vector3D.y = this.d;
-			vector3D.z = 0;
-		} else {
-			vector3D.x = this.tx;
-			vector3D.y = this.ty;
-			vector3D.z = 1;
-		}
-	}
-	,copyFrom: function(sourceMatrix) {
-		this.a = sourceMatrix.a;
-		this.b = sourceMatrix.b;
-		this.c = sourceMatrix.c;
-		this.d = sourceMatrix.d;
-		this.tx = sourceMatrix.tx;
-		this.ty = sourceMatrix.ty;
-	}
-	,copyRowFrom: function(row,vector3D) {
-		if(row > 2) {
-			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
-		} else if(row == 0) {
-			this.a = vector3D.x;
-			this.c = vector3D.y;
-		} else if(row == 1) {
-			this.b = vector3D.x;
-			this.d = vector3D.y;
-		} else {
-			this.tx = vector3D.x;
-			this.ty = vector3D.y;
-		}
-	}
-	,copyRowTo: function(row,vector3D) {
-		if(row > 2) {
-			throw new js__$Boot_HaxeError("Row " + row + " out of bounds (2)");
-		} else if(row == 0) {
-			vector3D.x = this.a;
-			vector3D.y = this.b;
-			vector3D.z = this.tx;
-		} else if(row == 1) {
-			vector3D.x = this.c;
-			vector3D.y = this.d;
-			vector3D.z = this.ty;
-		} else {
-			vector3D.setTo(0,0,1);
-		}
-	}
-	,createBox: function(scaleX,scaleY,rotation,tx,ty) {
-		if(ty == null) {
-			ty = 0;
-		}
-		if(tx == null) {
-			tx = 0;
-		}
-		if(rotation == null) {
-			rotation = 0;
-		}
-		if(rotation != 0) {
-			var cos = Math.cos(rotation);
-			var sin = Math.sin(rotation);
-			this.a = cos * scaleX;
-			this.b = sin * scaleY;
-			this.c = -sin * scaleX;
-			this.d = cos * scaleY;
-		} else {
-			this.a = scaleX;
-			this.b = 0;
-			this.c = 0;
-			this.d = scaleY;
-		}
-		this.tx = tx;
-		this.ty = ty;
-	}
-	,createGradientBox: function(width,height,rotation,tx,ty) {
-		if(ty == null) {
-			ty = 0;
-		}
-		if(tx == null) {
-			tx = 0;
-		}
-		if(rotation == null) {
-			rotation = 0;
-		}
-		this.a = width / 1638.4;
-		this.d = height / 1638.4;
-		if(rotation != 0) {
-			var cos = Math.cos(rotation);
-			var sin = Math.sin(rotation);
-			this.b = sin * this.d;
-			this.c = -sin * this.a;
-			this.a *= cos;
-			this.d *= cos;
-		} else {
-			this.b = 0;
-			this.c = 0;
-		}
-		this.tx = tx + width / 2;
-		this.ty = ty + height / 2;
-	}
-	,deltaTransformPoint: function(point) {
-		return new openfl_geom_Point(point.x * this.a + point.y * this.c,point.x * this.b + point.y * this.d);
-	}
-	,equals: function(matrix) {
-		if(matrix != null && this.tx == matrix.tx && this.ty == matrix.ty && this.a == matrix.a && this.b == matrix.b && this.c == matrix.c) {
-			return this.d == matrix.d;
-		} else {
-			return false;
-		}
-	}
-	,identity: function() {
-		this.a = 1;
-		this.b = 0;
-		this.c = 0;
-		this.d = 1;
-		this.tx = 0;
-		this.ty = 0;
-	}
-	,invert: function() {
-		var norm = this.a * this.d - this.b * this.c;
-		if(norm == 0) {
-			this.a = this.b = this.c = this.d = 0;
-			this.tx = -this.tx;
-			this.ty = -this.ty;
-		} else {
-			norm = 1.0 / norm;
-			var a1 = this.d * norm;
-			this.d = this.a * norm;
-			this.a = a1;
-			this.b *= -norm;
-			this.c *= -norm;
-			var tx1 = -this.a * this.tx - this.c * this.ty;
-			this.ty = -this.b * this.tx - this.d * this.ty;
-			this.tx = tx1;
-		}
-		return this;
-	}
-	,rotate: function(theta) {
-		var cos = Math.cos(theta);
-		var sin = Math.sin(theta);
-		var a1 = this.a * cos - this.b * sin;
-		this.b = this.a * sin + this.b * cos;
-		this.a = a1;
-		var c1 = this.c * cos - this.d * sin;
-		this.d = this.c * sin + this.d * cos;
-		this.c = c1;
-		var tx1 = this.tx * cos - this.ty * sin;
-		this.ty = this.tx * sin + this.ty * cos;
-		this.tx = tx1;
-	}
-	,scale: function(sx,sy) {
-		this.a *= sx;
-		this.b *= sy;
-		this.c *= sx;
-		this.d *= sy;
-		this.tx *= sx;
-		this.ty *= sy;
-	}
-	,setRotation: function(theta,scale) {
-		if(scale == null) {
-			scale = 1;
-		}
-		this.a = Math.cos(theta) * scale;
-		this.c = Math.sin(theta) * scale;
-		this.b = -this.c;
-		this.d = this.a;
-	}
-	,setTo: function(a,b,c,d,tx,ty) {
-		this.a = a;
-		this.b = b;
-		this.c = c;
-		this.d = d;
-		this.tx = tx;
-		this.ty = ty;
-	}
-	,to3DString: function(roundPixels) {
-		if(roundPixels == null) {
-			roundPixels = false;
-		}
-		if(roundPixels) {
-			return "matrix3d(" + this.a + ", " + this.b + ", 0, 0, " + this.c + ", " + this.d + ", 0, 0, 0, 0, 1, 0, " + (this.tx | 0) + ", " + (this.ty | 0) + ", 0, 1)";
-		} else {
-			return "matrix3d(" + this.a + ", " + this.b + ", 0, 0, " + this.c + ", " + this.d + ", 0, 0, 0, 0, 1, 0, " + this.tx + ", " + this.ty + ", 0, 1)";
-		}
-	}
-	,toMozString: function() {
-		return "matrix(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + "px, " + this.ty + "px)";
-	}
-	,toString: function() {
-		return "matrix(" + this.a + ", " + this.b + ", " + this.c + ", " + this.d + ", " + this.tx + ", " + this.ty + ")";
-	}
-	,transformPoint: function(pos) {
-		return new openfl_geom_Point(pos.x * this.a + pos.y * this.c + this.tx,pos.x * this.b + pos.y * this.d + this.ty);
-	}
-	,translate: function(dx,dy) {
-		this.tx += dx;
-		this.ty += dy;
-	}
-	,toArray: function(transpose) {
-		if(transpose == null) {
-			transpose = false;
-		}
-		if(this.__array == null) {
-			var this1 = new Float32Array(9);
-			this.__array = this1;
-		}
-		if(transpose) {
-			this.__array[0] = this.a;
-			this.__array[1] = this.b;
-			this.__array[2] = 0;
-			this.__array[3] = this.c;
-			this.__array[4] = this.d;
-			this.__array[5] = 0;
-			this.__array[6] = this.tx;
-			this.__array[7] = this.ty;
-			this.__array[8] = 1;
-		} else {
-			this.__array[0] = this.a;
-			this.__array[1] = this.c;
-			this.__array[2] = this.tx;
-			this.__array[3] = this.b;
-			this.__array[4] = this.d;
-			this.__array[5] = this.ty;
-			this.__array[6] = 0;
-			this.__array[7] = 0;
-			this.__array[8] = 1;
-		}
-		return this.__array;
-	}
-	,__cleanValues: function() {
-		this.a = Math.round(this.a * 1000) / 1000;
-		this.b = Math.round(this.b * 1000) / 1000;
-		this.c = Math.round(this.c * 1000) / 1000;
-		this.d = Math.round(this.d * 1000) / 1000;
-		this.tx = Math.round(this.tx * 10) / 10;
-		this.ty = Math.round(this.ty * 10) / 10;
-	}
-	,__toMatrix3: function() {
-		openfl_geom_Matrix.__matrix3.setTo(this.a,this.b,this.c,this.d,this.tx,this.ty);
-		return openfl_geom_Matrix.__matrix3;
-	}
-	,__transformInversePoint: function(point) {
-		var norm = this.a * this.d - this.b * this.c;
-		if(norm == 0) {
-			point.x = -this.tx;
-			point.y = -this.ty;
-		} else {
-			var px = 1.0 / norm * (this.c * (this.ty - point.y) + this.d * (point.x - this.tx));
-			point.y = 1.0 / norm * (this.a * (point.y - this.ty) + this.b * (this.tx - point.x));
-			point.x = px;
-		}
-	}
-	,__transformInverseX: function(px,py) {
-		var norm = this.a * this.d - this.b * this.c;
-		if(norm == 0) {
-			return -this.tx;
-		} else {
-			return 1.0 / norm * (this.c * (this.ty - py) + this.d * (px - this.tx));
-		}
-	}
-	,__transformInverseY: function(px,py) {
-		var norm = this.a * this.d - this.b * this.c;
-		if(norm == 0) {
-			return -this.ty;
-		} else {
-			return 1.0 / norm * (this.a * (py - this.ty) + this.b * (this.tx - px));
-		}
-	}
-	,__transformPoint: function(point) {
-		var px = point.x;
-		var py = point.y;
-		point.x = px * this.a + py * this.c + this.tx;
-		point.y = px * this.b + py * this.d + this.ty;
-	}
-	,__transformX: function(px,py) {
-		return px * this.a + py * this.c + this.tx;
-	}
-	,__transformY: function(px,py) {
-		return px * this.b + py * this.d + this.ty;
-	}
-	,__translateTransformed: function(px,py) {
-		this.tx = px * this.a + py * this.c + this.tx;
-		this.ty = px * this.b + py * this.d + this.ty;
-	}
-	,__class__: openfl_geom_Matrix
-};
-var openfl_geom_ColorTransform = function(redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier,redOffset,greenOffset,blueOffset,alphaOffset) {
-	if(alphaOffset == null) {
-		alphaOffset = 0;
-	}
-	if(blueOffset == null) {
-		blueOffset = 0;
-	}
-	if(greenOffset == null) {
-		greenOffset = 0;
-	}
-	if(redOffset == null) {
-		redOffset = 0;
-	}
-	if(alphaMultiplier == null) {
-		alphaMultiplier = 1;
-	}
-	if(blueMultiplier == null) {
-		blueMultiplier = 1;
-	}
-	if(greenMultiplier == null) {
-		greenMultiplier = 1;
-	}
-	if(redMultiplier == null) {
-		redMultiplier = 1;
-	}
-	this.redMultiplier = redMultiplier;
-	this.greenMultiplier = greenMultiplier;
-	this.blueMultiplier = blueMultiplier;
-	this.alphaMultiplier = alphaMultiplier;
-	this.redOffset = redOffset;
-	this.greenOffset = greenOffset;
-	this.blueOffset = blueOffset;
-	this.alphaOffset = alphaOffset;
-};
-$hxClasses["openfl.geom.ColorTransform"] = openfl_geom_ColorTransform;
-openfl_geom_ColorTransform.__name__ = ["openfl","geom","ColorTransform"];
-openfl_geom_ColorTransform.prototype = {
-	alphaMultiplier: null
-	,alphaOffset: null
-	,blueMultiplier: null
-	,blueOffset: null
-	,greenMultiplier: null
-	,greenOffset: null
-	,redMultiplier: null
-	,redOffset: null
-	,concat: function(second) {
-		this.redMultiplier *= second.redMultiplier;
-		this.greenMultiplier *= second.greenMultiplier;
-		this.blueMultiplier *= second.blueMultiplier;
-		this.alphaMultiplier *= second.alphaMultiplier;
-		this.redOffset = second.redMultiplier * this.redOffset + second.redOffset;
-		this.greenOffset = second.greenMultiplier * this.greenOffset + second.greenOffset;
-		this.blueOffset = second.blueMultiplier * this.blueOffset + second.blueOffset;
-		this.alphaOffset = second.alphaMultiplier * this.alphaOffset + second.alphaOffset;
-	}
-	,toString: function() {
-		return "(redMultiplier=" + this.redMultiplier + ", greenMultiplier=" + this.greenMultiplier + ", blueMultiplier=" + this.blueMultiplier + ", alphaMultiplier=" + this.alphaMultiplier + ", redOffset=" + this.redOffset + ", greenOffset=" + this.greenOffset + ", blueOffset=" + this.blueOffset + ", alphaOffset=" + this.alphaOffset + ")";
-	}
-	,__clone: function() {
-		return new openfl_geom_ColorTransform(this.redMultiplier,this.greenMultiplier,this.blueMultiplier,this.alphaMultiplier,this.redOffset,this.greenOffset,this.blueOffset,this.alphaOffset);
-	}
-	,__copyFrom: function(ct) {
-		this.redMultiplier = ct.redMultiplier;
-		this.greenMultiplier = ct.greenMultiplier;
-		this.blueMultiplier = ct.blueMultiplier;
-		this.alphaMultiplier = ct.alphaMultiplier;
-		this.redOffset = ct.redOffset;
-		this.greenOffset = ct.greenOffset;
-		this.blueOffset = ct.blueOffset;
-		this.alphaOffset = ct.alphaOffset;
-	}
-	,__combine: function(ct) {
-		this.redMultiplier *= ct.redMultiplier;
-		this.greenMultiplier *= ct.greenMultiplier;
-		this.blueMultiplier *= ct.blueMultiplier;
-		this.alphaMultiplier *= ct.alphaMultiplier;
-		this.redOffset += ct.redOffset;
-		this.greenOffset += ct.greenOffset;
-		this.blueOffset += ct.blueOffset;
-		this.alphaOffset += ct.alphaOffset;
-	}
-	,__identity: function() {
-		this.redMultiplier = 1;
-		this.greenMultiplier = 1;
-		this.blueMultiplier = 1;
-		this.alphaMultiplier = 1;
-		this.redOffset = 0;
-		this.greenOffset = 0;
-		this.blueOffset = 0;
-		this.alphaOffset = 0;
-	}
-	,__equals: function(ct,skipAlphaMultiplier) {
-		if(skipAlphaMultiplier == null) {
-			skipAlphaMultiplier = false;
-		}
-		if(ct != null && this.redMultiplier == ct.redMultiplier && this.greenMultiplier == ct.greenMultiplier && this.blueMultiplier == ct.blueMultiplier && (skipAlphaMultiplier || this.alphaMultiplier == ct.alphaMultiplier) && this.redOffset == ct.redOffset && this.greenOffset == ct.greenOffset && this.blueOffset == ct.blueOffset) {
-			return this.alphaOffset == ct.alphaOffset;
-		} else {
-			return false;
-		}
-	}
-	,__isDefault: function() {
-		if(this.redMultiplier == 1 && this.greenMultiplier == 1 && this.blueMultiplier == 1 && this.alphaMultiplier == 1 && this.redOffset == 0 && this.greenOffset == 0 && this.blueOffset == 0) {
-			return this.alphaOffset == 0;
-		} else {
-			return false;
-		}
-	}
-	,get_color: function() {
-		return (this.redOffset | 0) << 16 | (this.greenOffset | 0) << 8 | (this.blueOffset | 0);
-	}
-	,set_color: function(value) {
-		this.redOffset = value >> 16 & 255;
-		this.greenOffset = value >> 8 & 255;
-		this.blueOffset = value & 255;
-		this.redMultiplier = 0;
-		this.greenMultiplier = 0;
-		this.blueMultiplier = 0;
-		return this.get_color();
-	}
-	,__toLimeColorMatrix: function() {
-		if(openfl_geom_ColorTransform.__limeColorMatrix == null) {
-			var this1 = new Float32Array(20);
-			openfl_geom_ColorTransform.__limeColorMatrix = this1;
-		}
-		openfl_geom_ColorTransform.__limeColorMatrix[0] = this.redMultiplier;
-		openfl_geom_ColorTransform.__limeColorMatrix[4] = this.redOffset / 255;
-		openfl_geom_ColorTransform.__limeColorMatrix[6] = this.greenMultiplier;
-		openfl_geom_ColorTransform.__limeColorMatrix[9] = this.greenOffset / 255;
-		openfl_geom_ColorTransform.__limeColorMatrix[12] = this.blueMultiplier;
-		openfl_geom_ColorTransform.__limeColorMatrix[14] = this.blueOffset / 255;
-		openfl_geom_ColorTransform.__limeColorMatrix[18] = this.alphaMultiplier;
-		openfl_geom_ColorTransform.__limeColorMatrix[19] = this.alphaOffset / 255;
-		return openfl_geom_ColorTransform.__limeColorMatrix;
-	}
-	,__class__: openfl_geom_ColorTransform
-};
 var openfl_Lib = function() { };
 $hxClasses["openfl.Lib"] = openfl_Lib;
 openfl_Lib.__name__ = ["openfl","Lib"];
@@ -67445,6 +66773,233 @@ openfl_net_NetStream.prototype = $extend(openfl_events_EventDispatcher.prototype
 	}
 	,__class__: openfl_net_NetStream
 });
+var openfl_net_SharedObject = function() {
+	openfl_events_EventDispatcher.call(this);
+	this.client = this;
+	this.objectEncoding = 3;
+};
+$hxClasses["openfl.net.SharedObject"] = openfl_net_SharedObject;
+openfl_net_SharedObject.__name__ = ["openfl","net","SharedObject"];
+openfl_net_SharedObject.getLocal = function(name,localPath,secure) {
+	if(secure == null) {
+		secure = false;
+	}
+	var illegalValues = [" ","~","%","&","\\",";",":","\"","'",",","<",">","?","#"];
+	var allowed = true;
+	if(name == null || name == "") {
+		allowed = false;
+	} else {
+		var _g = 0;
+		while(_g < illegalValues.length) {
+			var value = illegalValues[_g];
+			++_g;
+			if(name.indexOf(value) > -1) {
+				allowed = false;
+				break;
+			}
+		}
+	}
+	if(!allowed) {
+		throw new js__$Boot_HaxeError(new openfl_errors_Error("Error #2134: Cannot create SharedObject."));
+	}
+	if(localPath == null) {
+		localPath = window.location.href;
+	}
+	if(openfl_net_SharedObject.__sharedObjects == null) {
+		openfl_net_SharedObject.__sharedObjects = new haxe_ds_StringMap();
+		openfl_Lib.application.onExit.add(openfl_net_SharedObject.application_onExit);
+	}
+	var id = localPath + "/" + name;
+	var _this = openfl_net_SharedObject.__sharedObjects;
+	if(!(__map_reserved[id] != null ? _this.existsReserved(id) : _this.h.hasOwnProperty(id))) {
+		var sharedObject = new openfl_net_SharedObject();
+		sharedObject.data = { };
+		sharedObject.__localPath = localPath;
+		sharedObject.__name = name;
+		var encodedData = null;
+		try {
+			var storage = js_Browser.getLocalStorage();
+			if(storage != null) {
+				encodedData = storage.getItem(localPath + ":" + name);
+			}
+		} catch( e ) {
+			haxe_CallStack.lastException = e;
+		}
+		if(encodedData != null && encodedData != "") {
+			try {
+				var unserializer = new haxe_Unserializer(encodedData);
+				unserializer.setResolver({ resolveEnum : Type.resolveEnum, resolveClass : openfl_net_SharedObject.__resolveClass});
+				sharedObject.data = unserializer.unserialize();
+			} catch( e1 ) {
+				haxe_CallStack.lastException = e1;
+			}
+		}
+		var _this1 = openfl_net_SharedObject.__sharedObjects;
+		if(__map_reserved[id] != null) {
+			_this1.setReserved(id,sharedObject);
+		} else {
+			_this1.h[id] = sharedObject;
+		}
+	}
+	var _this2 = openfl_net_SharedObject.__sharedObjects;
+	if(__map_reserved[id] != null) {
+		return _this2.getReserved(id);
+	} else {
+		return _this2.h[id];
+	}
+};
+openfl_net_SharedObject.getRemote = function(name,remotePath,persistence,secure) {
+	if(secure == null) {
+		secure = false;
+	}
+	if(persistence == null) {
+		persistence = false;
+	}
+	openfl_Lib.notImplemented({ fileName : "SharedObject.hx", lineNumber : 260, className : "openfl.net.SharedObject", methodName : "getRemote"});
+	return null;
+};
+openfl_net_SharedObject.__getPath = function(localPath,name) {
+	var path = lime_system_System.get_applicationStorageDirectory() + "/" + localPath + "/";
+	name = StringTools.replace(name,"//","/");
+	name = StringTools.replace(name,"//","/");
+	if(StringTools.startsWith(name,"/")) {
+		name = HxOverrides.substr(name,1,null);
+	}
+	if(StringTools.endsWith(name,"/")) {
+		name = name.substring(0,name.length - 1);
+	}
+	if(name.indexOf("/") > -1) {
+		var split = name.split("/");
+		name = "";
+		var _g1 = 0;
+		var _g = split.length - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			name += "#" + split[i] + "/";
+		}
+		name += split[split.length - 1];
+	}
+	return path + name + ".sol";
+};
+openfl_net_SharedObject.__mkdir = function(directory) {
+};
+openfl_net_SharedObject.__resolveClass = function(name) {
+	if(name != null) {
+		if(StringTools.startsWith(name,"neash.")) {
+			name = StringTools.replace(name,"neash.","openfl.");
+		}
+		if(StringTools.startsWith(name,"native.")) {
+			name = StringTools.replace(name,"native.","openfl.");
+		}
+		if(StringTools.startsWith(name,"flash.")) {
+			name = StringTools.replace(name,"flash.","openfl.");
+		}
+		if(StringTools.startsWith(name,"openfl._v2.")) {
+			name = StringTools.replace(name,"openfl._v2.","openfl.");
+		}
+		if(StringTools.startsWith(name,"openfl._legacy.")) {
+			name = StringTools.replace(name,"openfl._legacy.","openfl.");
+		}
+		return Type.resolveClass(name);
+	}
+	return null;
+};
+openfl_net_SharedObject.application_onExit = function(_) {
+	var _this = openfl_net_SharedObject.__sharedObjects;
+	var sharedObject = new haxe_ds__$StringMap_StringMapIterator(_this,_this.arrayKeys());
+	while(sharedObject.hasNext()) {
+		var sharedObject1 = sharedObject.next();
+		sharedObject1.flush();
+	}
+};
+openfl_net_SharedObject.__super__ = openfl_events_EventDispatcher;
+openfl_net_SharedObject.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	client: null
+	,data: null
+	,fps: null
+	,objectEncoding: null
+	,__localPath: null
+	,__name: null
+	,clear: function() {
+		this.data = { };
+		try {
+			var storage = js_Browser.getLocalStorage();
+			if(storage != null) {
+				storage.removeItem(this.__localPath + ":" + this.__name);
+			}
+		} catch( e ) {
+			haxe_CallStack.lastException = e;
+		}
+	}
+	,close: function() {
+	}
+	,connect: function(myConnection,params) {
+		openfl_Lib.notImplemented({ fileName : "SharedObject.hx", lineNumber : 96, className : "openfl.net.SharedObject", methodName : "connect"});
+	}
+	,flush: function(minDiskSpace) {
+		if(minDiskSpace == null) {
+			minDiskSpace = 0;
+		}
+		if(Reflect.fields(this.data).length == 0) {
+			return 0;
+		}
+		var encodedData = haxe_Serializer.run(this.data);
+		try {
+			var storage = js_Browser.getLocalStorage();
+			if(storage != null) {
+				storage.removeItem(this.__localPath + ":" + this.__name);
+				storage.setItem(this.__localPath + ":" + this.__name,encodedData);
+			}
+		} catch( e ) {
+			haxe_CallStack.lastException = e;
+			return 1;
+		}
+		return 0;
+	}
+	,send: function(args) {
+		openfl_Lib.notImplemented({ fileName : "SharedObject.hx", lineNumber : 269, className : "openfl.net.SharedObject", methodName : "send"});
+	}
+	,setDirty: function(propertyName) {
+	}
+	,setProperty: function(propertyName,value) {
+		if(this.data != null) {
+			this.data[propertyName] = value;
+		}
+	}
+	,get_size: function() {
+		try {
+			var d = haxe_Serializer.run(this.data);
+			return haxe_io_Bytes.ofString(d).length;
+		} catch( e ) {
+			haxe_CallStack.lastException = e;
+			return 0;
+		}
+	}
+	,__class__: openfl_net_SharedObject
+});
+var openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$ = {};
+$hxClasses["openfl.net._SharedObjectFlushStatus.SharedObjectFlushStatus_Impl_"] = openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$;
+openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$.__name__ = ["openfl","net","_SharedObjectFlushStatus","SharedObjectFlushStatus_Impl_"];
+openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$.fromString = function(value) {
+	switch(value) {
+	case "flushed":
+		return 0;
+	case "pending":
+		return 1;
+	default:
+		return null;
+	}
+};
+openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$.toString = function(value) {
+	switch(value) {
+	case 0:
+		return "flushed";
+	case 1:
+		return "pending";
+	default:
+		return null;
+	}
+};
 var openfl_net_URLLoader = function(request) {
 	openfl_events_EventDispatcher.call(this);
 	this.bytesLoaded = 0;
@@ -67740,6 +67295,29 @@ $hxClasses["openfl.system.SecurityDomain"] = openfl_system_SecurityDomain;
 openfl_system_SecurityDomain.__name__ = ["openfl","system","SecurityDomain"];
 openfl_system_SecurityDomain.prototype = {
 	__class__: openfl_system_SecurityDomain
+};
+var openfl_system_System = function() { };
+$hxClasses["openfl.system.System"] = openfl_system_System;
+openfl_system_System.__name__ = ["openfl","system","System"];
+openfl_system_System.exit = function(code) {
+	lime_system_System.exit(code);
+};
+openfl_system_System.gc = function() {
+};
+openfl_system_System.pause = function() {
+	openfl_Lib.notImplemented({ fileName : "System.hx", lineNumber : 40, className : "openfl.system.System", methodName : "pause"});
+};
+openfl_system_System.resume = function() {
+	openfl_Lib.notImplemented({ fileName : "System.hx", lineNumber : 47, className : "openfl.system.System", methodName : "resume"});
+};
+openfl_system_System.setClipboard = function(string) {
+	lime_system_Clipboard.set_text(string);
+};
+openfl_system_System.get_totalMemory = function() {
+	return (window.performance && window.performance.memory) ? window.performance.memory.usedJSHeapSize : 0;
+};
+openfl_system_System.get_vmVersion = function() {
+	return "1.0.0";
 };
 var openfl_text__$AntiAliasType_AntiAliasType_$Impl_$ = {};
 $hxClasses["openfl.text._AntiAliasType.AntiAliasType_Impl_"] = openfl_text__$AntiAliasType_AntiAliasType_$Impl_$;
@@ -72012,41 +71590,1894 @@ openfl_utils_TouchData.prototype = {
 	}
 	,__class__: openfl_utils_TouchData
 };
-var spritesheet_SpritesheetManager = function(target) {
+var scene_Scene = function() {
+	this.container = new openfl_display_Sprite();
+};
+$hxClasses["scene.Scene"] = scene_Scene;
+scene_Scene.__name__ = ["scene","Scene"];
+scene_Scene.prototype = {
+	container: null
+	,update: function() {
+		return this;
+	}
+	,__class__: scene_Scene
+};
+var scene_GameOver = function() {
+	this.title = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/title.png"));
+	scene_Scene.call(this);
+	var tf = new openfl_text_TextField();
+	tf.set_text("Thank you\n    for Playing!");
+	tf.set_scaleX(2.0);
+	tf.set_scaleY(2.0);
+	tf.set_x(30);
+	tf.set_y(Game.height / 2 + 100);
+	this.container.addChild(this.title);
+	this.container.addChild(tf);
+};
+$hxClasses["scene.GameOver"] = scene_GameOver;
+scene_GameOver.__name__ = ["scene","GameOver"];
+scene_GameOver.__super__ = scene_Scene;
+scene_GameOver.prototype = $extend(scene_Scene.prototype,{
+	title: null
+	,update: function() {
+		if(Module.isKeyPressed(90)) {
+			return new scene_Title();
+		}
+		return this;
+	}
+	,__class__: scene_GameOver
+});
+var scene_InGame = function(stageNum_,floorNum_,party) {
+	this.seq = new Sequencer(false);
+	this.field = new openfl_display_Sprite();
+	scene_Scene.call(this);
+	scene_InGame.stageNum = stageNum_;
+	scene_InGame.floorNum = floorNum_;
+	scene_InGame.gameEnd = false;
+	this.panorama = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/panorama.png"));
+	this.container.addChild(this.panorama);
+	this.container.addChild(this.field);
+	scene_InGame.stage = scene_ingame_stage_StageFactory.generate(stageNum_,floorNum_);
+	scene_InGame.goToNextStage = false;
+	if(scene_InGame.stage == null) {
+		haxe_Log.trace("stage == null",{ fileName : "InGame.hx", lineNumber : 44, className : "scene.InGame", methodName : "new"});
+	}
+	this.field.addChild(scene_InGame.stage.container);
+	this.actorMediator = new scene_ingame_actor_ActorMediator(party);
+	this.field.addChild(this.actorMediator.container);
+	this.field.set_scaleX(2.0);
+	this.field.set_scaleY(2.0);
+	this.actorMediator.update();
+	this.camera(this.actorMediator.getSubject());
+	scene_InGame.animator = new animator_Animator(this.field);
+};
+$hxClasses["scene.InGame"] = scene_InGame;
+scene_InGame.__name__ = ["scene","InGame"];
+scene_InGame.goToNextFloor = function() {
+	++scene_InGame.floorNum;
+	scene_InGame.goToNextStage = true;
+};
+scene_InGame.setNextStage = function(stageNum_,floorNum_) {
+	scene_InGame.stageNum = stageNum_;
+	scene_InGame.floorNum = floorNum_;
+	scene_InGame.goToNextStage = true;
+};
+scene_InGame.__super__ = scene_Scene;
+scene_InGame.prototype = $extend(scene_Scene.prototype,{
+	field: null
+	,actorMediator: null
+	,panorama: null
+	,seq: null
+	,update: function() {
+		this.seq.run();
+		scene_InGame.animator.draw();
+		this.camera(this.actorMediator.getSubject());
+		if(this.actorMediator.update()) {
+			var so = openfl_net_SharedObject.getLocal("saveData");
+			so.data.stage = scene_InGame.stageNum;
+			so.data.party = 1;
+			return new scene_InGame(scene_InGame.stageNum,scene_InGame.floorNum,1);
+		} else if(scene_InGame.goToNextStage) {
+			return new scene_InGame(scene_InGame.stageNum,scene_InGame.floorNum,scene_InGame.party);
+		} else if(scene_InGame.gameEnd) {
+			return new scene_GameOver();
+		}
+		return this;
+	}
+	,camera: function(subject) {
+		var dest = new openfl_geom_Point(Game.width / 2 - subject.x * this.field.get_scaleX(),Game.height / 2 - subject.y * this.field.get_scaleY());
+		var scroll = dest;
+		this.field.set_x((this.field.get_x() + scroll.x) / 2);
+		this.field.set_y((this.field.get_y() + scroll.y) / 2);
+	}
+	,__class__: scene_InGame
+});
+var scene_Title = function() {
+	this.title = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/title.png"));
+	this.seq = new Sequencer(false);
+	var _gthis = this;
+	scene_Scene.call(this);
+	haxe_Log.trace(openfl_system_System.get_totalMemory(),{ fileName : "Title.hx", lineNumber : 25, className : "scene.Title", methodName : "new"});
+	this.title.set_scaleX(1.05);
+	this.title.set_scaleY(1.05);
+	var _g = 0;
+	while(_g < 15) {
+		var i = _g++;
+		this.seq.addSequence(function() {
+			var _g1 = _gthis.title;
+			_g1.set_scaleX(_g1.get_scaleX() - 0.0033333333333333335);
+			var _g11 = _gthis.title;
+			_g11.set_scaleY(_g11.get_scaleY() - 0.0033333333333333335);
+		});
+		this.seq.waitSequence(1);
+	}
+	var tf = new openfl_text_TextField();
+	tf.set_text("Press Z key to Start");
+	tf.set_scaleX(2.0);
+	tf.set_scaleY(2.0);
+	tf.set_x(30);
+	tf.set_y(Game.height / 2 + 100);
+	this.container.addChild(this.title);
+	this.container.addChild(tf);
+};
+$hxClasses["scene.Title"] = scene_Title;
+scene_Title.__name__ = ["scene","Title"];
+scene_Title.__super__ = scene_Scene;
+scene_Title.prototype = $extend(scene_Scene.prototype,{
+	seq: null
+	,title: null
+	,update: function() {
+		if(!this.seq.run()) {
+			return this;
+		}
+		if(Module.isKeyPressed(90)) {
+			var so = openfl_net_SharedObject.getLocal("saveData");
+			if(so.data.stage == null) {
+				so.data.stage = 1;
+			}
+			if(so.data.party == null) {
+				so.data.party = 1;
+			}
+			return new scene_InGame(so.data.stage,1,so.data.party);
+		}
+		return this;
+	}
+	,__class__: scene_Title
+});
+var scene_ingame_actor_Actor = function(x,y,w,h) {
+	this.hitStop = 0;
+	this.shellCount = 0;
+	this.invincible = 0;
+	this.knockBack = 0;
+	this.ATK = 0;
+	this.HP = 1;
+	this.TYPE = "";
+	this.state = new scene_ingame_actor_State();
+	this.lostCount = 60;
+	this.jumped = 2;
+	this.t = 0;
+	this.a = 0;
+	this.v = new openfl_geom_Point(0,0);
+	this.hitBox = new openfl_display_Sprite();
+	this.container = new openfl_display_Sprite();
+	this.container.set_x(x);
+	this.container.set_y(y);
+	this.container.addChild(this.hitBox);
+	this.hitBox.get_graphics().beginFill(this.cr,1);
+	this.hitBox.get_graphics().drawRect(0,0,w,h);
+	this.divW = Math.floor((this.hitBox.get_width() - 1) / Game.GRID_SIZE) + 2;
+	this.divH = Math.floor((this.hitBox.get_height() - 1) / Game.GRID_SIZE) + 2;
+};
+$hxClasses["scene.ingame.actor.Actor"] = scene_ingame_actor_Actor;
+scene_ingame_actor_Actor.__name__ = ["scene","ingame","actor","Actor"];
+scene_ingame_actor_Actor.prototype = {
+	container: null
+	,hitBox: null
+	,v: null
+	,a: null
+	,t: null
+	,cr: null
+	,divW: null
+	,divH: null
+	,jumped: null
+	,lostCount: null
+	,state: null
+	,TYPE: null
+	,HP: null
+	,ATK: null
+	,knockBack: null
+	,invincible: null
+	,shellCount: null
+	,hitStop: null
+	,update: function() {
+		if(this.hitStop > 0) {
+			this.hitStop--;
+			return true;
+		}
+		if(this.HP <= 0) {
+			if(this.lostCount == 60) {
+				this.hitStop = 15;
+			}
+			this.state.act = scene_ingame_actor_State.actions.DEAD;
+			this.lostCount--;
+		}
+		this.invincible--;
+		this.a = this.isLimitBreak() ? 0.001 : 0.02;
+		this.t++;
+		this.v.y += this.a * this.t;
+		if(this.isLimitBreak() || this.knockBack > 0) {
+			this.state.command = scene_ingame_actor_State.commands.FREE;
+		}
+		if(this.knockBack > 0) {
+			this.knockBack--;
+		}
+		if(this.state.act == scene_ingame_actor_State.actions.DEAD) {
+			this.state.command = scene_ingame_actor_State.commands.FREE;
+		}
+		if(this.checkCommand(scene_ingame_actor_State.commands.RIGHT)) {
+			var tmp = this.v.x;
+			this.v.x = 1;
+			this.v.x += tmp;
+		}
+		if(this.checkCommand(scene_ingame_actor_State.commands.LEFT)) {
+			var tmp1 = this.v.x;
+			this.v.x = -1;
+			this.v.x += tmp1;
+		}
+		if(this.checkCommand(scene_ingame_actor_State.commands.UP)) {
+			if(this.jumped > 0) {
+				this.t = 0;
+				this.v.y = -4.5;
+			}
+			this.state.command = this.state.command & ~scene_ingame_actor_State.commands.UP;
+		}
+		if(this.v.y > Game.MAX_SPEED) {
+			this.v.y -= this.a * this.t;
+		}
+		this.hitTerrain();
+		if(this.checkCommand(scene_ingame_actor_State.commands.RIGHT)) {
+			this.v.x *= 0.5;
+		}
+		if(this.checkCommand(scene_ingame_actor_State.commands.LEFT)) {
+			this.v.x *= 0.5;
+		}
+		this.v.x *= 0.99;
+		if(0.001 <= this.v.x && this.v.x < 0.001) {
+			this.v.x = 0;
+		}
+		if(0.001 <= this.v.y && this.v.y < 0.001) {
+			this.v.y = 0;
+		}
+		if(this.isLimitBreak()) {
+			this.shellCount--;
+		}
+		return this.lostCount > 0;
+	}
+	,addForce: function(f,reset) {
+		if(reset) {
+			this.v = new openfl_geom_Point(0,0);
+			this.t = 0;
+		}
+		this.v = this.v.add(f);
+	}
+	,getVelocity: function() {
+		return this.v;
+	}
+	,getAirTime: function() {
+		return this.t;
+	}
+	,hitAffect: function(e) {
+	}
+	,isLimitBreak: function() {
+		return this.shellCount > 0;
+	}
+	,inRange: function(x,y,radius) {
+		return (x - this.container.get_x()) * (x - this.container.get_x()) + (y - this.container.get_y()) * (y - this.container.get_y()) <= radius * radius;
+	}
+	,checkCommand: function(check) {
+		return (this.state.command & check) == check;
+	}
+	,hitTerrain: function() {
+		var isBuried = true;
+		while(isBuried) {
+			isBuried = false;
+			var _g1 = 0;
+			var _g = this.divW;
+			while(_g1 < _g) {
+				var j = _g1++;
+				var under = scene_InGame.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + this.hitBox.get_height());
+				if(under == "1") {
+					var _g2 = this.container;
+					_g2.set_y(_g2.get_y() - 0.1);
+					isBuried = true;
+					break;
+				}
+			}
+		}
+		var isBuried1 = true;
+		while(isBuried1) {
+			isBuried1 = false;
+			var _g11 = 0;
+			var _g3 = this.divW;
+			while(_g11 < _g3) {
+				var j1 = _g11++;
+				var over = scene_InGame.stage.getIDByFloat(this.container.get_x(),this.container.get_y());
+				if(over == "1") {
+					var _g21 = this.container;
+					_g21.set_y(_g21.get_y() + 0.2);
+					isBuried1 = true;
+					break;
+				}
+			}
+		}
+		var divV = 8;
+		var tmp = new openfl_geom_Point(this.v.x / divV,this.v.y / divV);
+		var hitX = false;
+		var hitY = false;
+		var _g12 = 0;
+		var _g4 = divV;
+		while(_g12 < _g4) {
+			var i = _g12++;
+			if(!hitY) {
+				var _g22 = this.container;
+				_g22.set_y(_g22.get_y() + tmp.y);
+				var _g31 = 0;
+				var _g23 = this.divW;
+				while(_g31 < _g23) {
+					var j2 = _g31++;
+					var over1 = scene_InGame.stage.getIDByFloat(this.container.get_x() + j2 * this.hitBox.get_width() / (this.divW - 1),this.container.get_y());
+					var under1 = scene_InGame.stage.getIDByFloat(this.container.get_x() + j2 * this.hitBox.get_width() / (this.divW - 1),this.container.get_y() + this.hitBox.get_height());
+					if(tmp.y > 0 && under1 == "2" && !this.checkCommand(scene_ingame_actor_State.commands.DOWN) && (this.container.get_y() + this.hitBox.get_height()) % 16 < 0.5) {
+						this.jumped = 2;
+						var _g41 = this.container;
+						_g41.set_y(_g41.get_y() - tmp.y);
+						this.v.x *= this.isLimitBreak() ? 0.999 : 0.8;
+						this.v.y *= this.isLimitBreak() ? -0.99 : 0;
+						this.t = 0;
+						hitY = true;
+						break;
+					}
+					if(under1 == "-1") {
+						this.HP = 0;
+						return;
+					}
+					if(under1 == "1") {
+						this.jumped = 2;
+					} else {
+						this.jumped = -1;
+					}
+					if(over1 == "1" || under1 == "1") {
+						var _g42 = this.container;
+						_g42.set_y(_g42.get_y() - tmp.y);
+						this.v.x *= this.isLimitBreak() ? 0.999 : 0.8;
+						this.v.y *= this.isLimitBreak() ? -0.99 : 0;
+						this.t = 0;
+						hitY = true;
+						break;
+					}
+				}
+			}
+			if(!hitX) {
+				var _g24 = this.container;
+				_g24.set_x(_g24.get_x() + tmp.x);
+				var _g32 = 0;
+				var _g25 = this.divH;
+				while(_g32 < _g25) {
+					var j3 = _g32++;
+					var left = scene_InGame.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + j3 * this.hitBox.get_height() / (this.divH - 1));
+					var right = scene_InGame.stage.getIDByFloat(this.container.get_x() + this.hitBox.get_width(),this.container.get_y() + j3 * this.hitBox.get_height() / (this.divH - 1));
+					if(left == "1" || right == "1") {
+						var _g43 = this.container;
+						_g43.set_x(_g43.get_x() - tmp.x);
+						this.v.x *= this.isLimitBreak() ? -0.99 : -0.1;
+						hitX = true;
+						break;
+					}
+				}
+			}
+			if(hitX && hitY) {
+				break;
+			}
+		}
+	}
+	,affectedByTerrain: function() {
+	}
+	,__class__: scene_ingame_actor_Actor
+};
+var scene_ingame_actor_Generator = function() {
+};
+$hxClasses["scene.ingame.actor.Generator"] = scene_ingame_actor_Generator;
+scene_ingame_actor_Generator.__name__ = ["scene","ingame","actor","Generator"];
+scene_ingame_actor_Generator.prototype = {
+	target: null
+	,container: null
+	,setup: function(target,container) {
+		this.target = target;
+		this.container = container;
+	}
+	,add: function(e) {
+		if(e == null) {
+			return false;
+		}
+		this.container.addChild(e.container);
+		this.target.add(e);
+		return true;
+	}
+	,__class__: scene_ingame_actor_Generator
+};
+var scene_ingame_actor_enemy_BulletGenerator = function() {
+	scene_ingame_actor_Generator.call(this);
+};
+$hxClasses["scene.ingame.actor.enemy.BulletGenerator"] = scene_ingame_actor_enemy_BulletGenerator;
+scene_ingame_actor_enemy_BulletGenerator.__name__ = ["scene","ingame","actor","enemy","BulletGenerator"];
+scene_ingame_actor_enemy_BulletGenerator.__super__ = scene_ingame_actor_Generator;
+scene_ingame_actor_enemy_BulletGenerator.prototype = $extend(scene_ingame_actor_Generator.prototype,{
+	set: function(pattern,fromX,fromY,toX,toY,thrust) {
+		if(this.target == null || this.container == null) {
+			return false;
+		}
+		switch(pattern) {
+		case 1:
+			return this.addBullet1(fromX,fromY,toX,toY,thrust);
+		case 2:
+			return this.addBullet2(fromX,fromY,toX,toY,thrust);
+		case 3:
+			return this.aimForYourself(fromX,fromY,thrust);
+		default:
+			return false;
+		}
+	}
+	,addBullet1: function(fromX,fromY,toX,toY,thrust,time,reflect,through) {
+		if(through == null) {
+			through = false;
+		}
+		if(reflect == null) {
+			reflect = false;
+		}
+		if(time == null) {
+			time = 180;
+		}
+		var v = new openfl_geom_Point(toX - fromX,toY - fromY);
+		v.normalize(thrust);
+		var b = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,180,reflect,through);
+		return this.add(b);
+	}
+	,addBullet2: function(fromX,fromY,toX,toY,thrust,time,reflect,through) {
+		if(through == null) {
+			through = false;
+		}
+		if(reflect == null) {
+			reflect = false;
+		}
+		if(time == null) {
+			time = 180;
+		}
+		var v = new openfl_geom_Point(toX - fromX,toY - fromY);
+		var result = true;
+		v.normalize(thrust);
+		var v2 = Module.rotateVector2D(v,-10);
+		var b = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v2.x,v2.y,0,0,1,180,reflect,through);
+		result = this.add(b);
+		var b1 = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,180,reflect,through);
+		result = this.add(b1);
+		v2 = Module.rotateVector2D(v,10);
+		var b2 = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v2.x,v2.y,0,0,1,180,reflect,through);
+		result = this.add(b2);
+		return result;
+	}
+	,nWay: function(fromX,fromY,thrust,way,time,reflect,through) {
+		if(through == null) {
+			through = false;
+		}
+		if(reflect == null) {
+			reflect = false;
+		}
+		if(time == null) {
+			time = 180;
+		}
+		if(way == null) {
+			way = 6;
+		}
+		var v = new openfl_geom_Point(scene_ingame_actor_PlayerManager.pcPos.x - fromX,scene_ingame_actor_PlayerManager.pcPos.y - fromY);
+		var degree = 360 / way;
+		v.normalize(thrust);
+		var result = true;
+		var _g1 = 0;
+		var _g = way;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var b = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,240,reflect,through);
+			result = this.add(b);
+			v = Module.rotateVector2D(v,degree);
+		}
+		return result;
+	}
+	,aimForYourself: function(fromX,fromY,thrust,time,reflect,through) {
+		if(through == null) {
+			through = false;
+		}
+		if(reflect == null) {
+			reflect = false;
+		}
+		if(time == null) {
+			time = 180;
+		}
+		var v = new openfl_geom_Point(scene_ingame_actor_PlayerManager.pcPos.x - fromX,scene_ingame_actor_PlayerManager.pcPos.y - fromY);
+		v.normalize(thrust);
+		var b = new scene_ingame_actor_enemy_Bullet(fromX,fromY + 3,v.x,v.y,0,0,1,240,reflect,through);
+		return this.add(b);
+	}
+	,__class__: scene_ingame_actor_enemy_BulletGenerator
+});
+var scene_ingame_actor_enemy_EnemyGenerator = function() {
+	scene_ingame_actor_Generator.call(this);
+};
+$hxClasses["scene.ingame.actor.enemy.EnemyGenerator"] = scene_ingame_actor_enemy_EnemyGenerator;
+scene_ingame_actor_enemy_EnemyGenerator.__name__ = ["scene","ingame","actor","enemy","EnemyGenerator"];
+scene_ingame_actor_enemy_EnemyGenerator.__super__ = scene_ingame_actor_Generator;
+scene_ingame_actor_enemy_EnemyGenerator.prototype = $extend(scene_ingame_actor_Generator.prototype,{
+	set: function(enemyNum,x,y) {
+		var e = null;
+		switch(enemyNum) {
+		case 20:
+			e = new scene_ingame_actor_enemy_Walker(x,y);
+			break;
+		case 21:
+			e = new scene_ingame_actor_enemy_Gunner(x,y);
+			break;
+		case 22:
+			e = new scene_ingame_actor_enemy_Bloomer(x,y,this.target);
+			break;
+		case 23:
+			e = new scene_ingame_actor_enemy_Boss1(x,y);
+			this.add(new scene_ingame_actor_enemy_BossObserver(e));
+			break;
+		default:
+			return false;
+		}
+		scene_InGame.stage.setIDByFloat(x,y,"0");
+		return this.add(e);
+	}
+	,__class__: scene_ingame_actor_enemy_EnemyGenerator
+});
+var scene_ingame_actor_object_ObjectGenerator = function() {
+	this.map = new haxe_ds_IntMap();
+	scene_ingame_actor_Generator.call(this);
+};
+$hxClasses["scene.ingame.actor.object.ObjectGenerator"] = scene_ingame_actor_object_ObjectGenerator;
+scene_ingame_actor_object_ObjectGenerator.__name__ = ["scene","ingame","actor","object","ObjectGenerator"];
+scene_ingame_actor_object_ObjectGenerator.__super__ = scene_ingame_actor_Generator;
+scene_ingame_actor_object_ObjectGenerator.prototype = $extend(scene_ingame_actor_Generator.prototype,{
+	map: null
+	,set: function(objectNum,x,y) {
+		var o = null;
+		switch(objectNum) {
+		case 11:
+			o = new scene_ingame_actor_object_Door(x,y);
+			scene_InGame.stage.setIDByFloat(x,y,"0");
+			break;
+		case 12:
+			var b = new scene_ingame_actor_object_Block(x,y,this.map);
+			this.map.set(Math.floor(x + y * scene_InGame.stage.getWidth()),b);
+			o = b;
+			scene_InGame.stage.setIDByFloat(x,y,"1");
+			break;
+		case 13:
+			o = new scene_ingame_actor_object_BombBlock(x,y,this.map);
+			scene_InGame.stage.setIDByFloat(x,y,"2");
+			break;
+		case 14:
+			o = new scene_ingame_actor_object_Trampoline(x,y);
+			scene_InGame.stage.setIDByFloat(x,y,"0");
+			break;
+		default:
+			return false;
+		}
+		return this.add(o);
+	}
+	,__class__: scene_ingame_actor_object_ObjectGenerator
+});
+var scene_ingame_actor_ActorMediator = function(party) {
+	this.bullets = new List();
+	this.deadMan = new List();
+	this.actors = new List();
+	this.container = new openfl_display_Sprite();
+	scene_ingame_actor_ActorMediator.bulletGenerator.setup(this.bullets,this.container);
+	scene_ingame_actor_ActorMediator.enemyGenerator.setup(this.actors,this.container);
+	scene_ingame_actor_ActorMediator.objectGenerator.setup(this.actors,this.container);
+	var _g1 = 0;
+	var _g = scene_InGame.stage.getHeight();
+	while(_g1 < _g) {
+		var y = _g1++;
+		var _g3 = 0;
+		var _g2 = scene_InGame.stage.getWidth();
+		while(_g3 < _g2) {
+			var x = _g3++;
+			scene_ingame_actor_ActorMediator.enemyGenerator.set(Std.parseInt(scene_InGame.stage.getID(x,y)),Game.GRID_SIZE * x,Game.GRID_SIZE * y);
+			scene_ingame_actor_ActorMediator.objectGenerator.set(Std.parseInt(scene_InGame.stage.getID(x,y)),Game.GRID_SIZE * x,Game.GRID_SIZE * y);
+		}
+	}
+	this.pm = new scene_ingame_actor_PlayerManager(this.container,this.deadMan,party);
+	this.ui = new scene_ingame_actor_UserInterface(this.container,this.pm.npc);
+};
+$hxClasses["scene.ingame.actor.ActorMediator"] = scene_ingame_actor_ActorMediator;
+scene_ingame_actor_ActorMediator.__name__ = ["scene","ingame","actor","ActorMediator"];
+scene_ingame_actor_ActorMediator.prototype = {
+	container: null
+	,pm: null
+	,ui: null
+	,actors: null
+	,deadMan: null
+	,bullets: null
+	,update: function() {
+		this.actorUpdate();
+		this.bulletUpdate();
+		var isEnd = this.pm.playerUpdate();
+		this.ui.update(this.pm.pc);
+		var it = new _$List_ListIterator(this.deadMan.h);
+		while(it.hasNext()) {
+			var d = it.next();
+			if(!d.update()) {
+				if(d.TYPE == "Enemy" || d.TYPE == "Player") {
+					scene_InGame.animator.add("death",d.container.get_x() + d.hitBox.get_width() / 2,d.container.get_y() + d.hitBox.get_height() / 2);
+				}
+				this.container.removeChild(d.container);
+				this.deadMan.remove(d);
+			}
+		}
+		return isEnd;
+	}
+	,getSubject: function() {
+		return this.pm.subject;
+	}
+	,bulletUpdate: function() {
+		var it = new _$List_ListIterator(this.bullets.h);
+		while(it.hasNext()) {
+			var b = it.next();
+			b.update();
+			var p = this.pm.pc;
+			var it1 = new _$List_ListIterator(this.pm.npc.h);
+			while(true) {
+				if(!b.dead && b.container.hitTestObject(p.hitBox)) {
+					b.hitAffect(p);
+				}
+				if(!it1.hasNext()) {
+					break;
+				}
+				p = it1.next();
+			}
+			if(b.dead) {
+				this.container.removeChild(b.container);
+				this.bullets.remove(b);
+			}
+		}
+	}
+	,actorUpdate: function() {
+		var aIt = new _$List_ListIterator(this.actors.h);
+		while(aIt.hasNext()) {
+			var e = aIt.next();
+			if(Math.abs(e.container.get_x() - this.pm.subject.x) > Game.width / 2) {
+				continue;
+			}
+			var p = this.pm.pc;
+			var pIt = new _$List_ListIterator(this.pm.npc.h);
+			while(!(e.invincible > 0 || e.state.act == scene_ingame_actor_State.actions.DEAD)) {
+				if(e.hitBox.hitTestObject(p.hitBox)) {
+					p.hitAffect(e);
+					e.hitAffect(p);
+				}
+				if(!pIt.hasNext()) {
+					break;
+				}
+				p = pIt.next();
+			}
+			e.update();
+			if(e.state.act == scene_ingame_actor_State.actions.DEAD) {
+				this.deadMan.add(e);
+				this.actors.remove(e);
+			}
+		}
+	}
+	,__class__: scene_ingame_actor_ActorMediator
+};
+var scene_ingame_actor_Aiming = function() {
+	this.controlAng = 60;
+	this.degree = 0;
+	this.container = new openfl_display_Sprite();
+	var bitmap = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/c_cursor.png"));
+	var _g = bitmap;
+	_g.set_x(_g.get_x() - 2);
+	this.container.addChild(bitmap);
+};
+$hxClasses["scene.ingame.actor.Aiming"] = scene_ingame_actor_Aiming;
+scene_ingame_actor_Aiming.__name__ = ["scene","ingame","actor","Aiming"];
+scene_ingame_actor_Aiming.prototype = {
+	container: null
+	,degree: null
+	,controlAng: null
+	,update: function(x,y,dir) {
+		this.degree = 270 + this.controlAng * dir;
+		this.container.set_x(x + Math.cos(Math.PI / 180 * this.degree) * 64);
+		this.container.set_y(y + Math.sin(Math.PI / 180 * this.degree) * 64);
+	}
+	,__class__: scene_ingame_actor_Aiming
+};
+var scene_ingame_actor_Player = function(x,y,w,h) {
+	this.cr = 255;
+	scene_ingame_actor_Actor.call(this,x,y,w,h);
+	this.spSheet = new scene_ingame_spritesheet_Hero(this);
+	this.hitBox.set_alpha(0);
+	this.TYPE = "Player";
+	this.HP = 1;
+	this.ATK = 0;
+};
+$hxClasses["scene.ingame.actor.Player"] = scene_ingame_actor_Player;
+scene_ingame_actor_Player.__name__ = ["scene","ingame","actor","Player"];
+scene_ingame_actor_Player.__super__ = scene_ingame_actor_Actor;
+scene_ingame_actor_Player.prototype = $extend(scene_ingame_actor_Actor.prototype,{
+	spSheet: null
+	,update: function() {
+		this.spSheet.update();
+		return scene_ingame_actor_Actor.prototype.update.call(this);
+	}
+	,hitAffect: function(e) {
+		var f = new openfl_geom_Point(e.container.get_x() - this.container.get_x(),e.container.get_y() - this.container.get_y());
+		var v = e.getVelocity();
+		f.normalize(3);
+		f.add(v);
+		e.addForce(f,this.isLimitBreak());
+		e.knockBack = 6;
+		e.hitStop = 6;
+		e.invincible = 30;
+		e.HP -= !this.isLimitBreak() ? this.ATK : this.ATK + 1;
+	}
+	,__class__: scene_ingame_actor_Player
+});
+var scene_ingame_actor_PlayerManager = function(parent,deadMan,party) {
+	this.npc = new List();
+	this.subject = new openfl_geom_Point();
+	this.aiming = new scene_ingame_actor_Aiming();
+	this.shell = null;
+	this.isExtincted = false;
+	this.deadMan = deadMan;
+	this.container = parent;
+	var pos = scene_InGame.stage.getPlayerPos();
+	var _g1 = 0;
+	var _g = party;
+	while(_g1 < _g) {
+		var i = _g1++;
+		var p = new scene_ingame_actor_Player(pos.x + 16 * (i - 1),pos.y,12,16);
+		this.container.addChild(p.container);
+		this.npc.add(p);
+	}
+	this.pc = this.npc.pop();
+};
+$hxClasses["scene.ingame.actor.PlayerManager"] = scene_ingame_actor_PlayerManager;
+scene_ingame_actor_PlayerManager.__name__ = ["scene","ingame","actor","PlayerManager"];
+scene_ingame_actor_PlayerManager.prototype = {
+	container: null
+	,isExtincted: null
+	,shell: null
+	,aiming: null
+	,deadMan: null
+	,subject: null
+	,pc: null
+	,npc: null
+	,playerUpdate: function() {
+		if(this.pc != null) {
+			scene_InGame.party = 1 + this.npc.length;
+		}
+		if(!this.isExtincted) {
+			if(this.pcControl()) {
+				this.subjectUpdate();
+			}
+			this.npcControl();
+		}
+		return this.isExtincted;
+	}
+	,pcControl: function() {
+		var tmp = this.pc.container.get_x();
+		var tmp1 = this.pc.hitBox.get_width() / 2;
+		scene_ingame_actor_PlayerManager.pcPos.x = tmp + tmp1;
+		var tmp2 = this.pc.container.get_y();
+		var tmp3 = this.pc.hitBox.get_height() / 2;
+		scene_ingame_actor_PlayerManager.pcPos.y = tmp2 + tmp3;
+		if(Module.isKeyPressed(81)) {
+			this.isExtincted = false;
+			this.generatePlayer(48,48);
+		}
+		this.pc.state.command = scene_ingame_actor_State.commands.FREE;
+		if(Module.isKeyDoubleClick(16)) {
+			this.changeControl(false,false);
+		}
+		if(this.pc.state.act != scene_ingame_actor_State.actions.DEAD) {
+			if(Module.getKeyHoldTime(16) == 30) {
+				this.generatePlayer(this.pc.container.get_x(),this.pc.container.get_y());
+			}
+			if(Module.isKeyPressed(65)) {
+				this.gather();
+			}
+			if(Module.isKeyPressed(83)) {
+				this.disband();
+			}
+			if(Module.isKeyDown(40) && this.shell != null) {
+				if(this.aiming.controlAng < 180) {
+					this.aiming.controlAng += 1.5;
+				}
+			} else if(Module.isKeyDown(38) && this.shell != null) {
+				if(this.aiming.controlAng > 0) {
+					this.aiming.controlAng -= 1.5;
+				}
+			}
+			if(Module.isKeyDown(37)) {
+				this.pc.state.command = this.pc.state.command + scene_ingame_actor_State.commands.LEFT;
+				if(this.shell == null) {
+					this.pc.state.dir = scene_ingame_actor_State.directions.LEFT;
+				}
+			}
+			if(Module.isKeyDown(39)) {
+				this.pc.state.command = this.pc.state.command + scene_ingame_actor_State.commands.RIGHT;
+				if(this.shell == null) {
+					this.pc.state.dir = scene_ingame_actor_State.directions.RIGHT;
+				}
+			}
+			if(Module.isKeyDown(40)) {
+				this.pc.state.command = this.pc.state.command + scene_ingame_actor_State.commands.DOWN;
+			}
+			if(Module.isKeyPressed(90)) {
+				this.pc.state.command = this.pc.state.command + scene_ingame_actor_State.commands.UP;
+			}
+			if(this.shell == null) {
+				if(Module.isKeyPressed(88)) {
+					this.throwing();
+				}
+			} else {
+				if(Module.isKeyDoubleClick(39)) {
+					this.pc.state.dir = scene_ingame_actor_State.directions.RIGHT;
+				}
+				if(Module.isKeyDoubleClick(37)) {
+					this.pc.state.dir = scene_ingame_actor_State.directions.LEFT;
+				}
+				if(!Module.isKeyDown(88)) {
+					this.throwing();
+				}
+				if(Module.isKeyDown(67)) {
+					this.cancelThrowing(this.shell.state.act = scene_ingame_actor_State.actions.TRAIL);
+				}
+			}
+		}
+		var isAlive = this.pc.update();
+		if(!isAlive) {
+			this.container.removeChild(this.pc.container);
+			this.changeControl(true,false);
+		}
+		return isAlive;
+	}
+	,npcControl: function() {
+		var it = new _$List_ListIterator(this.npc.h);
+		var previous = this.pc;
+		while(it.hasNext()) {
+			var p = it.next();
+			p.update();
+			p.state.command = scene_ingame_actor_State.commands.FREE;
+			if(p.state.act == scene_ingame_actor_State.actions.DEAD) {
+				this.deadMan.add(p);
+				this.npc.remove(p);
+			}
+			if(p.state.act == scene_ingame_actor_State.actions.TRAIL) {
+				if(previous.container.get_y() - p.container.get_y() <= -24) {
+					p.state.command = p.state.command + scene_ingame_actor_State.commands.UP;
+				}
+				if(previous.container.get_y() - p.container.get_y() > 16) {
+					p.state.command = p.state.command + scene_ingame_actor_State.commands.DOWN;
+				}
+				if(previous.container.get_x() - p.container.get_x() >= 16) {
+					p.state.command = p.state.command + scene_ingame_actor_State.commands.RIGHT;
+					p.state.dir = scene_ingame_actor_State.directions.RIGHT;
+				}
+				if(previous.container.get_x() - p.container.get_x() <= -16) {
+					p.state.command = p.state.command + scene_ingame_actor_State.commands.LEFT;
+					p.state.dir = scene_ingame_actor_State.directions.LEFT;
+				}
+				previous = p;
+			}
+		}
+		if(this.shell != null) {
+			this.aiming.update(this.pc.container.get_x(),this.pc.container.get_y(),this.pc.state.dir);
+			this.shell.addForce(new openfl_geom_Point(0,0),true);
+			this.shell.container.set_x(this.pc.container.get_x() - 6 * this.pc.state.dir);
+			this.shell.container.set_y(this.pc.container.get_y() - 8);
+			this.shell.state.dir = this.pc.state.dir;
+			if(this.shell.state.act == scene_ingame_actor_State.actions.DEAD) {
+				this.cancelThrowing(scene_ingame_actor_State.actions.DEAD);
+			}
+		}
+	}
+	,subjectUpdate: function() {
+		this.subject.setTo(this.pc.container.get_x(),this.pc.container.get_y() - 48);
+		if(this.subject.x < Game.width / 2 / this.container.parent.get_scaleX()) {
+			var tmp = Game.width / 2;
+			var tmp1 = this.container.parent.get_scaleX();
+			this.subject.x = tmp / tmp1;
+		}
+		if(this.subject.x > scene_InGame.stage.getWidth() * 16 - Game.width / 2 / this.container.parent.get_scaleX()) {
+			var tmp2 = scene_InGame.stage.getWidth() * 16;
+			var tmp3 = Game.width / 2 / this.container.parent.get_scaleX();
+			this.subject.x = tmp2 - tmp3;
+		}
+		if(this.subject.y < Game.height / 2 / this.container.parent.get_scaleY()) {
+			var tmp4 = Game.height / 2;
+			var tmp5 = this.container.parent.get_scaleY();
+			this.subject.y = tmp4 / tmp5;
+		}
+		if(this.subject.y > scene_InGame.stage.getHeight() * 16 - Game.height / 2 / this.container.parent.get_scaleY()) {
+			var tmp6 = scene_InGame.stage.getHeight() * 16;
+			var tmp7 = Game.height / 2 / this.container.parent.get_scaleY();
+			this.subject.y = tmp6 - tmp7;
+		}
+	}
+	,throwing: function() {
+		if(this.shell == null) {
+			var it = new _$List_ListIterator(this.npc.h);
+			while(it.hasNext()) {
+				var p = it.next();
+				var inside = new openfl_geom_Point(this.pc.container.get_x() - p.container.get_x(),this.pc.container.get_y() - p.container.get_y());
+				if(-20 < inside.x && inside.x < 20 && (-20 < inside.y && inside.y < 20)) {
+					this.shell = p;
+					this.shell.state.act = scene_ingame_actor_State.actions.HOLD;
+					this.container.addChild(this.aiming.container);
+					break;
+				}
+			}
+		} else {
+			var v = new openfl_geom_Point(this.aiming.container.get_x() - this.shell.container.get_x(),this.aiming.container.get_y() - this.shell.container.get_y());
+			v.normalize(Game.FC_VELOCITY + 1);
+			v.add(this.pc.getVelocity());
+			this.shell.addForce(v,true);
+			this.shell.shellCount = 30;
+			this.cancelThrowing(scene_ingame_actor_State.actions.WAIT);
+		}
+	}
+	,cancelThrowing: function(action) {
+		this.shell.container.set_x(this.pc.container.get_x());
+		this.shell.container.set_y(this.pc.container.get_y() - 8);
+		this.shell.state.act = action;
+		this.shell = null;
+		this.container.removeChild(this.aiming.container);
+	}
+	,gather: function() {
+		var it = new _$List_ListIterator(this.npc.h);
+		while(it.hasNext()) {
+			var p = it.next();
+			p.state.act = scene_ingame_actor_State.actions.TRAIL;
+		}
+	}
+	,disband: function() {
+		var it = new _$List_ListIterator(this.npc.h);
+		while(it.hasNext()) {
+			var p = it.next();
+			p.state.act = scene_ingame_actor_State.actions.WAIT;
+		}
+	}
+	,changeControl: function(dead,reverse) {
+		if(this.npc.length == 0) {
+			if(dead) {
+				this.isExtincted = true;
+			}
+			return;
+		}
+		if(this.shell != null) {
+			this.cancelThrowing(scene_ingame_actor_State.actions.TRAIL);
+		}
+		if(!dead) {
+			this.pc.state.act = scene_ingame_actor_State.actions.WAIT;
+			if(reverse) {
+				this.npc.push(this.pc);
+			} else {
+				this.npc.add(this.pc);
+			}
+		}
+		if(reverse) {
+			this.pc = this.npc.last();
+			this.npc.remove(this.pc);
+		} else {
+			this.pc = this.npc.pop();
+		}
+		this.pc.addForce(new openfl_geom_Point(0,-1),false);
+		var it = new _$List_ListIterator(this.npc.h);
+		while(it.hasNext()) {
+			var p = it.next();
+			p.state.act = scene_ingame_actor_State.actions.WAIT;
+			if(this.pc.inRange(p.container.get_x(),p.container.get_y(),32)) {
+				p.state.act = scene_ingame_actor_State.actions.TRAIL;
+			}
+		}
+	}
+	,generatePlayer: function(x,y) {
+		if(this.npc.length >= 2) {
+			var p = this.npc.first();
+			if(p.isLimitBreak()) {
+				return;
+			}
+			p.HP = 0;
+			this.deadMan.add(p);
+			this.npc.remove(p);
+		}
+		var p1 = new scene_ingame_actor_Player(x,y,12,16);
+		this.container.addChild(p1.container);
+		p1.addForce(new openfl_geom_Point(0,-1),true);
+		this.npc.add(p1);
+	}
+	,__class__: scene_ingame_actor_PlayerManager
+};
+var scene_ingame_actor_State = function() {
+	this.dir = scene_ingame_actor_State.directions.RIGHT;
+	this.act = scene_ingame_actor_State.actions.TRAIL;
+	this.jumped = 0;
+	this.command = scene_ingame_actor_State.commands.FREE;
+};
+$hxClasses["scene.ingame.actor.State"] = scene_ingame_actor_State;
+scene_ingame_actor_State.__name__ = ["scene","ingame","actor","State"];
+scene_ingame_actor_State.prototype = {
+	command: null
+	,jumped: null
+	,act: null
+	,dir: null
+	,__class__: scene_ingame_actor_State
+};
+var scene_ingame_actor_UserInterface = function(target,npc) {
+	this.target = target;
+	this.npc = npc;
+	this.nowLeader = new openfl_display_Bitmap(openfl_utils_Assets.getBitmapData("img/c_arrow.png"));
+	this.nowLeader.set_x(-30);
+	this.nowLeader.set_y(-30);
+	target.addChild(this.nowLeader);
+};
+$hxClasses["scene.ingame.actor.UserInterface"] = scene_ingame_actor_UserInterface;
+scene_ingame_actor_UserInterface.__name__ = ["scene","ingame","actor","UserInterface"];
+scene_ingame_actor_UserInterface.prototype = {
+	target: null
+	,npc: null
+	,nowLeader: null
+	,update: function(pc) {
+		this.nowLeader.set_x(pc.container.get_x() - 2);
+		this.nowLeader.set_y(pc.container.get_y() - 16);
+	}
+	,__class__: scene_ingame_actor_UserInterface
+};
+var scene_ingame_actor_enemy_Enemy = function(x,y,w,h) {
+	scene_ingame_actor_Actor.call(this,x,y,w,h);
+	this.TYPE = "Enemy";
+	this.ATK = 0;
+};
+$hxClasses["scene.ingame.actor.enemy.Enemy"] = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Enemy.__name__ = ["scene","ingame","actor","enemy","Enemy"];
+scene_ingame_actor_enemy_Enemy.__super__ = scene_ingame_actor_Actor;
+scene_ingame_actor_enemy_Enemy.prototype = $extend(scene_ingame_actor_Actor.prototype,{
+	hitAffect: function(e) {
+		var v = e.getVelocity();
+		if(this.container.get_y() - (e.container.get_y() + e.hitBox.get_height()) > -4 && v.y > 0) {
+			e.addForce(new openfl_geom_Point(v.x,-3),true);
+			this.HP -= 1;
+		} else {
+			var f = new openfl_geom_Point(e.container.get_x() - this.container.get_x(),e.container.get_y() - this.container.get_y());
+			f.normalize(3);
+			f.add(v);
+			e.addForce(f,this.isLimitBreak());
+			e.knockBack = 6;
+			e.hitStop = 6;
+			e.invincible = 30;
+			e.HP -= !this.isLimitBreak() ? this.ATK : this.ATK + 1;
+		}
+	}
+	,__class__: scene_ingame_actor_enemy_Enemy
+});
+var scene_ingame_actor_enemy_Bloomer = function(x,y,enemies) {
+	this.seq = new Sequencer(true);
+	var _gthis = this;
+	this.cr = 16711680;
+	scene_ingame_actor_enemy_Enemy.call(this,x,y,16,22);
+	this.spSheet = new scene_ingame_spritesheet_Slime2(this);
+	this.hitBox.set_alpha(0);
+	this.ATK = 0;
+	this.enemies = enemies;
+	this.seq.waitSequence(180);
+	this.seq.addSequence(function() {
+		_gthis.bloom();
+	});
+};
+$hxClasses["scene.ingame.actor.enemy.Bloomer"] = scene_ingame_actor_enemy_Bloomer;
+scene_ingame_actor_enemy_Bloomer.__name__ = ["scene","ingame","actor","enemy","Bloomer"];
+scene_ingame_actor_enemy_Bloomer.__super__ = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Bloomer.prototype = $extend(scene_ingame_actor_enemy_Enemy.prototype,{
+	seq: null
+	,enemies: null
+	,spSheet: null
+	,bloom: function() {
+		var v = new openfl_geom_Point(0,-5);
+		var _g = 0;
+		while(_g < 5) {
+			var i = _g++;
+			var e = new scene_ingame_actor_enemy_Pollen(this.container.get_x() + this.hitBox.get_width() / 2,this.container.get_y());
+			this.container.parent.addChild(e.container);
+			this.enemies.add(e);
+			e.addForce(Module.rotateVector2D(v,(i - 2) * 5),true);
+		}
+	}
+	,update: function() {
+		this.spSheet.update();
+		if(this.state.act != scene_ingame_actor_State.actions.DEAD) {
+			this.seq.run();
+		}
+		return scene_ingame_actor_enemy_Enemy.prototype.update.call(this);
+	}
+	,__class__: scene_ingame_actor_enemy_Bloomer
+});
+var scene_ingame_actor_enemy_Boss1 = function(x,y) {
+	this.preHP = 0;
+	this.seq = new Sequencer(false);
+	this.constant = new openfl_geom_Point(x,y);
+	this.cr = 16711680;
+	scene_ingame_actor_enemy_Enemy.call(this,x,y,16,16);
+	this.spSheet = new scene_ingame_spritesheet_Boss1Sp(this);
+	this.hitBox.set_alpha(0);
+	this.HP = 4;
+	this.preHP = this.HP;
+	this.ATK = 1;
+	this.seq.waitSequence(20);
+	this.setBlock();
+	this.seq.waitSequence(120);
+};
+$hxClasses["scene.ingame.actor.enemy.Boss1"] = scene_ingame_actor_enemy_Boss1;
+scene_ingame_actor_enemy_Boss1.__name__ = ["scene","ingame","actor","enemy","Boss1"];
+scene_ingame_actor_enemy_Boss1.__super__ = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Boss1.prototype = $extend(scene_ingame_actor_enemy_Enemy.prototype,{
+	seq: null
+	,bullets: null
+	,spSheet: null
+	,preHP: null
+	,constant: null
+	,update: function() {
+		this.spSheet.update();
+		if(this.state.act != scene_ingame_actor_State.actions.DEAD) {
+			if(this.seq.run()) {
+				this.attack();
+			}
+		}
+		this.container.set_x(this.constant.x);
+		this.container.set_y(this.constant.y);
+		return scene_ingame_actor_enemy_Enemy.prototype.update.call(this);
+	}
+	,attack: function() {
+		var _gthis = this;
+		this.seq.clear();
+		if(this.preHP != this.HP) {
+			this.setBlock();
+		} else {
+			var _g = this.HP;
+			switch(_g) {
+			case 1:
+				var _g1 = 0;
+				while(_g1 < 3) {
+					var i = _g1++;
+					this.seq.addSequence(function() {
+						scene_ingame_actor_ActorMediator.bulletGenerator.nWay(_gthis.container.get_x() + 8,_gthis.container.get_y(),2,6,120,false,true);
+					});
+					this.seq.waitSequence(12);
+				}
+				this.seq.waitSequence(180);
+				break;
+			case 2:
+				this.seq.addSequence(function() {
+					scene_ingame_actor_ActorMediator.bulletGenerator.nWay(_gthis.container.get_x() + 8,_gthis.container.get_y(),2,6,120,false,true);
+				});
+				this.seq.waitSequence(180);
+				break;
+			case 3:
+				var _g2 = 0;
+				while(_g2 < 3) {
+					var i1 = _g2++;
+					this.seq.addSequence(function() {
+						scene_ingame_actor_ActorMediator.bulletGenerator.aimForYourself(_gthis.container.get_x() + 8,_gthis.container.get_y(),2,240,false,true);
+					});
+					this.seq.waitSequence(12);
+				}
+				this.seq.waitSequence(180);
+				break;
+			case 4:
+				var _g3 = 0;
+				while(_g3 < 3) {
+					var i2 = _g3++;
+					this.seq.addSequence(function() {
+						scene_ingame_actor_ActorMediator.bulletGenerator.aimForYourself(_gthis.container.get_x() + 8,_gthis.container.get_y(),1,null,false,true);
+					});
+					this.seq.waitSequence(6);
+				}
+				this.seq.waitSequence(180);
+				break;
+			default:
+			}
+		}
+		this.preHP = this.HP;
+	}
+	,setBlock: function() {
+		var _gthis = this;
+		var _g = this.HP;
+		switch(_g) {
+		case 1:
+			var _g1 = 0;
+			while(_g1 < 2) {
+				var i = [_g1++];
+				this.seq.addSequence((function(i1) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (i1[0] - 1) * 16,_gthis.constant.y + 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (1 - i1[0]) * 16,_gthis.constant.y - 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 16,_gthis.constant.y + (i1[0] - 1) * 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 16,_gthis.constant.y + (1 - i1[0]) * 16);
+					};
+				})(i));
+				this.seq.addSequence((function() {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x + 32,_gthis.constant.y);
+					};
+				})());
+				this.seq.waitSequence(2);
+			}
+			var _g2 = 0;
+			while(_g2 < 6) {
+				var i2 = [_g2++];
+				this.seq.addSequence((function(i3) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (i3[0] - 3) * 16,_gthis.constant.y + 48);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (3 - i3[0]) * 16,_gthis.constant.y - 48);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 48,_gthis.constant.y + (i3[0] - 3) * 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 48,_gthis.constant.y + (3 - i3[0]) * 16);
+					};
+				})(i2));
+				this.seq.waitSequence(2);
+			}
+			this.seq.addSequence(function() {
+				scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x - 64,_gthis.constant.y);
+			});
+			break;
+		case 2:
+			var _g3 = 0;
+			while(_g3 < 2) {
+				var i4 = [_g3++];
+				this.seq.addSequence((function(i5) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (i5[0] - 1) * 16,_gthis.constant.y + 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (1 - i5[0]) * 16,_gthis.constant.y - 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 16,_gthis.constant.y + (i5[0] - 1) * 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 16,_gthis.constant.y + (1 - i5[0]) * 16);
+					};
+				})(i4));
+				this.seq.addSequence((function() {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x,_gthis.constant.y + 32);
+					};
+				})());
+				this.seq.waitSequence(2);
+			}
+			var _g4 = 0;
+			while(_g4 < 6) {
+				var i6 = [_g4++];
+				this.seq.addSequence((function(i7) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (i7[0] - 3) * 16,_gthis.constant.y + 48);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (3 - i7[0]) * 16,_gthis.constant.y - 48);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 48,_gthis.constant.y + (i7[0] - 3) * 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 48,_gthis.constant.y + (3 - i7[0]) * 16);
+					};
+				})(i6));
+				this.seq.waitSequence(2);
+			}
+			this.seq.addSequence(function() {
+				scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x,_gthis.constant.y - 64);
+			});
+			break;
+		case 3:
+			this.seq.addSequence(function() {
+				scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 16,_gthis.constant.y);
+			});
+			this.seq.waitSequence(2);
+			var _g5 = 0;
+			while(_g5 < 3) {
+				var i8 = [_g5++];
+				this.seq.addSequence((function(i9) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (1 - i9[0]) * 16,_gthis.constant.y - 16);
+					};
+				})(i8));
+				this.seq.waitSequence(2);
+			}
+			var _g6 = 0;
+			while(_g6 < 3) {
+				var i10 = [_g6++];
+				this.seq.addSequence((function(i11) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 16,_gthis.constant.y + i11[0] * 16);
+					};
+				})(i10));
+				this.seq.waitSequence(2);
+			}
+			var _g7 = 0;
+			while(_g7 < 4) {
+				var i12 = [_g7++];
+				this.seq.addSequence((function(i13) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + i13[0] * 16,_gthis.constant.y + 32);
+					};
+				})(i12));
+				this.seq.waitSequence(2);
+			}
+			var _g8 = 0;
+			while(_g8 < 5) {
+				var i14 = [_g8++];
+				this.seq.addSequence((function(i15) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 48,_gthis.constant.y + (2 - i15[0]) * 16);
+					};
+				})(i14));
+				this.seq.waitSequence(2);
+			}
+			var _g9 = 0;
+			while(_g9 < 7) {
+				var i16 = [_g9++];
+				this.seq.addSequence((function(i17) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (3 - i17[0]) * 16,_gthis.constant.y - 48);
+					};
+				})(i16));
+				this.seq.waitSequence(2);
+			}
+			var _g10 = 0;
+			while(_g10 < 5) {
+				var i18 = [_g10++];
+				this.seq.addSequence((function(i19) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 48,_gthis.constant.y + (i19[0] - 2) * 16);
+					};
+				})(i18));
+				this.seq.waitSequence(2);
+			}
+			this.seq.addSequence(function() {
+				scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x - 48,_gthis.constant.y + 48);
+			});
+			break;
+		case 4:
+			var _g11 = 0;
+			while(_g11 < 4) {
+				var i20 = [_g11++];
+				this.seq.addSequence((function(i21) {
+					return function() {
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (i21[0] - 2) * 16,_gthis.constant.y + 32);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + (2 - i21[0]) * 16,_gthis.constant.y - 32);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x - 32,_gthis.constant.y + (i21[0] - 2) * 16);
+						scene_ingame_actor_ActorMediator.objectGenerator.set(12,_gthis.constant.x + 32,_gthis.constant.y + (2 - i21[0]) * 16);
+					};
+				})(i20));
+				this.seq.waitSequence(2);
+			}
+			this.seq.addSequence(function() {
+				scene_ingame_actor_ActorMediator.objectGenerator.set(13,_gthis.constant.x + 48,_gthis.constant.y);
+			});
+			break;
+		default:
+		}
+		this.seq.waitSequence(60);
+	}
+	,__class__: scene_ingame_actor_enemy_Boss1
+});
+var scene_ingame_actor_enemy_BossObserver = function(target) {
+	this.count = 180;
+	this.target = target;
+	this.cr = 0;
+	scene_ingame_actor_Actor.call(this,0,0,1,1);
+	this.hitBox.set_alpha(0);
+};
+$hxClasses["scene.ingame.actor.enemy.BossObserver"] = scene_ingame_actor_enemy_BossObserver;
+scene_ingame_actor_enemy_BossObserver.__name__ = ["scene","ingame","actor","enemy","BossObserver"];
+scene_ingame_actor_enemy_BossObserver.__super__ = scene_ingame_actor_Actor;
+scene_ingame_actor_enemy_BossObserver.prototype = $extend(scene_ingame_actor_Actor.prototype,{
+	target: null
+	,count: null
+	,update: function() {
+		this.HP = 1;
+		if(this.target.lostCount > 0) {
+			return true;
+		}
+		this.count--;
+		if(this.count == 0) {
+			scene_InGame.gameEnd = true;
+		}
+		return true;
+	}
+	,hitAffect: function(e) {
+	}
+	,__class__: scene_ingame_actor_enemy_BossObserver
+});
+var scene_ingame_actor_enemy_Bullet = function(x,y,vx,vy,ax,ay,ATK,lifetime,reflect,through) {
+	this.through = false;
+	this.reflect = false;
+	this.t = -1;
+	this.dead = false;
+	this.container = new openfl_display_Sprite();
+	this.container.set_x(x);
+	this.container.set_y(y);
+	this.v = new openfl_geom_Point(vx,vy);
+	this.a = new openfl_geom_Point(ax,ay);
+	this.ATK = ATK;
+	this.lifetime = lifetime;
+	this.reflect = reflect;
+	this.through = through;
+	this.container.get_graphics().beginFill(0,1.0);
+	this.container.get_graphics().drawCircle(0,0,3);
+	this.container.get_graphics().beginFill(1101642,1.0);
+	this.container.get_graphics().drawCircle(0,0,2.5);
+};
+$hxClasses["scene.ingame.actor.enemy.Bullet"] = scene_ingame_actor_enemy_Bullet;
+scene_ingame_actor_enemy_Bullet.__name__ = ["scene","ingame","actor","enemy","Bullet"];
+scene_ingame_actor_enemy_Bullet.prototype = {
+	container: null
+	,ATK: null
+	,dead: null
+	,v: null
+	,a: null
+	,t: null
+	,lifetime: null
+	,reflect: null
+	,through: null
+	,update: function() {
+		this.t++;
+		if(this.t == this.lifetime) {
+			this.dead = true;
+		}
+		if(this.dead) {
+			return;
+		}
+		if(!this.speedCap(this.v)) {
+			this.v.x += this.a.x * this.t * 0.01;
+			this.v.y += this.a.y * this.t * 0.01;
+		}
+		var _g = scene_InGame.stage.getIDByFloat(this.container.get_x() + this.v.x,this.container.get_y());
+		if(_g != "0") {
+			if(this.reflect) {
+				this.v.x *= -1;
+			} else if(!this.through) {
+				this.dead = true;
+			}
+		}
+		var _g1 = scene_InGame.stage.getIDByFloat(this.container.get_x(),this.container.get_y() + this.v.y);
+		if(_g1 != "0") {
+			if(this.reflect) {
+				this.v.y *= -1;
+			} else if(!this.through) {
+				this.dead = true;
+			}
+		}
+		var _g2 = this.container;
+		_g2.set_x(_g2.get_x() + this.v.x);
+		var _g21 = this.container;
+		_g21.set_y(_g21.get_y() + this.v.y);
+	}
+	,hitAffect: function(p) {
+		if(!this.through) {
+			this.dead = true;
+		}
+		if(p.invincible > 0) {
+			return;
+		}
+		var f = new openfl_geom_Point(this.container.get_x() - p.container.get_x() + p.container.get_width() / 2,this.container.get_y() - p.container.get_y() + p.container.get_height() / 2);
+		f.normalize(3);
+		f.add(this.v);
+		p.addForce(f,true);
+		p.knockBack = 6;
+		p.hitStop = 6;
+		p.invincible = 30;
+		p.HP -= this.ATK;
+	}
+	,speedCap: function(v) {
+		return v.x * v.x + v.y * v.y > Game.MAX_SPEED * Game.MAX_SPEED * 2.25;
+	}
+	,__class__: scene_ingame_actor_enemy_Bullet
+};
+var scene_ingame_actor_enemy_Gunner = function(x,y) {
+	this.seq = new Sequencer(true);
+	var _gthis = this;
+	this.cr = 16711680;
+	scene_ingame_actor_enemy_Enemy.call(this,x,y,12,13);
+	this.spSheet = new scene_ingame_spritesheet_Slime(this);
+	this.hitBox.set_alpha(0);
+	this.ATK = 1;
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.FREE;
+		_gthis.state.command = _gthis.state.command + scene_ingame_actor_State.commands.UP;
+	});
+	this.seq.waitSequence(30);
+	this.seq.addSequence(function() {
+		scene_ingame_actor_ActorMediator.bulletGenerator.addBullet1(_gthis.container.get_x(),_gthis.container.get_y(),_gthis.container.get_x() - 1,_gthis.container.get_y(),3);
+	});
+	this.seq.waitSequence(120);
+};
+$hxClasses["scene.ingame.actor.enemy.Gunner"] = scene_ingame_actor_enemy_Gunner;
+scene_ingame_actor_enemy_Gunner.__name__ = ["scene","ingame","actor","enemy","Gunner"];
+scene_ingame_actor_enemy_Gunner.__super__ = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Gunner.prototype = $extend(scene_ingame_actor_enemy_Enemy.prototype,{
+	seq: null
+	,spSheet: null
+	,update: function() {
+		this.spSheet.update();
+		if(this.state.act != scene_ingame_actor_State.actions.DEAD) {
+			this.seq.run();
+		}
+		return scene_ingame_actor_enemy_Enemy.prototype.update.call(this);
+	}
+	,__class__: scene_ingame_actor_enemy_Gunner
+});
+var scene_ingame_actor_enemy_Pollen = function(x,y) {
+	this.seq = new Sequencer(true);
+	this.cr = 1101642;
+	scene_ingame_actor_enemy_Enemy.call(this,x,y,5,5);
+	this.TYPE = "Object";
+	this.ATK = 1;
+	this.HP = 90;
+};
+$hxClasses["scene.ingame.actor.enemy.Pollen"] = scene_ingame_actor_enemy_Pollen;
+scene_ingame_actor_enemy_Pollen.__name__ = ["scene","ingame","actor","enemy","Pollen"];
+scene_ingame_actor_enemy_Pollen.__super__ = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Pollen.prototype = $extend(scene_ingame_actor_enemy_Enemy.prototype,{
+	seq: null
+	,update: function() {
+		this.HP--;
+		return scene_ingame_actor_enemy_Enemy.prototype.update.call(this);
+	}
+	,__class__: scene_ingame_actor_enemy_Pollen
+});
+var scene_ingame_actor_enemy_Walker = function(x,y) {
+	this.seq = new Sequencer(true);
+	var _gthis = this;
+	this.cr = 16711680;
+	scene_ingame_actor_enemy_Enemy.call(this,x,y,12,13);
+	this.spSheet = new scene_ingame_spritesheet_Slime(this);
+	this.hitBox.set_alpha(0);
+	this.ATK = 1;
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.LEFT;
+	});
+	this.seq.waitSequence(60);
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.FREE;
+	});
+	this.seq.waitSequence(10);
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.UP;
+	});
+	this.seq.waitSequence(60);
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.RIGHT;
+	});
+	this.seq.waitSequence(60);
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.FREE;
+	});
+	this.seq.waitSequence(10);
+	this.seq.addSequence(function() {
+		_gthis.state.command = scene_ingame_actor_State.commands.UP;
+	});
+	this.seq.waitSequence(60);
+};
+$hxClasses["scene.ingame.actor.enemy.Walker"] = scene_ingame_actor_enemy_Walker;
+scene_ingame_actor_enemy_Walker.__name__ = ["scene","ingame","actor","enemy","Walker"];
+scene_ingame_actor_enemy_Walker.__super__ = scene_ingame_actor_enemy_Enemy;
+scene_ingame_actor_enemy_Walker.prototype = $extend(scene_ingame_actor_enemy_Enemy.prototype,{
+	seq: null
+	,spSheet: null
+	,update: function() {
+		this.spSheet.update();
+		if(this.state.act != scene_ingame_actor_State.actions.DEAD) {
+			this.seq.run();
+		}
+		return scene_ingame_actor_enemy_Enemy.prototype.update.call(this);
+	}
+	,__class__: scene_ingame_actor_enemy_Walker
+});
+var scene_ingame_actor_object_Object = function(x,y,w,h) {
+	scene_ingame_actor_Actor.call(this,x,y,w,h);
+	this.TYPE = "Object";
+};
+$hxClasses["scene.ingame.actor.object.Object"] = scene_ingame_actor_object_Object;
+scene_ingame_actor_object_Object.__name__ = ["scene","ingame","actor","object","Object"];
+scene_ingame_actor_object_Object.__super__ = scene_ingame_actor_Actor;
+scene_ingame_actor_object_Object.prototype = $extend(scene_ingame_actor_Actor.prototype,{
+	update: function() {
+		this.knockBack = 0;
+		this.invincible = 0;
+		this.shellCount = 0;
+		this.hitStop = 0;
+		return true;
+	}
+	,__class__: scene_ingame_actor_object_Object
+});
+var scene_ingame_actor_object_Block = function(x,y,map) {
+	this.seq = new Sequencer(false);
+	this.map = map;
+	this.cr = 15597806;
+	scene_ingame_actor_object_Object.call(this,x,y,16,16);
+	this.spSheet = new scene_ingame_spritesheet_BlockSp(this);
+	this.hitBox.set_alpha(0);
+};
+$hxClasses["scene.ingame.actor.object.Block"] = scene_ingame_actor_object_Block;
+scene_ingame_actor_object_Block.__name__ = ["scene","ingame","actor","object","Block"];
+scene_ingame_actor_object_Block.__super__ = scene_ingame_actor_object_Object;
+scene_ingame_actor_object_Block.prototype = $extend(scene_ingame_actor_object_Object.prototype,{
+	seq: null
+	,map: null
+	,spSheet: null
+	,update: function() {
+		this.spSheet.update();
+		this.knockBack = 0;
+		this.invincible = 0;
+		this.shellCount = 0;
+		this.hitStop = 0;
+		return !this.seq.run();
+	}
+	,hitAffect: function(e) {
+		var _gthis = this;
+		if(e != null) {
+			return;
+		}
+		if(this.seq.isEmpty()) {
+			this.seq.waitSequence(3);
+			this.seq.addSequence(function() {
+				scene_InGame.stage.setIDByFloat(_gthis.container.get_x(),_gthis.container.get_y(),"0");
+				_gthis.state.act = scene_ingame_actor_State.actions.DEAD;
+				var this1 = _gthis.map;
+				var key = Math.floor(_gthis.container.get_x() - Game.GRID_SIZE + _gthis.container.get_y() * scene_InGame.stage.getWidth());
+				var b = this1.h[key];
+				if(b != null) {
+					b.hitAffect(null);
+				}
+				var this2 = _gthis.map;
+				var key1 = Math.floor(_gthis.container.get_x() + (_gthis.container.get_y() - Game.GRID_SIZE) * scene_InGame.stage.getWidth());
+				var b1 = this2.h[key1];
+				if(b1 != null) {
+					b1.hitAffect(null);
+				}
+				var this3 = _gthis.map;
+				var key2 = Math.floor(_gthis.container.get_x() + Game.GRID_SIZE + _gthis.container.get_y() * scene_InGame.stage.getWidth());
+				var b2 = this3.h[key2];
+				if(b2 != null) {
+					b2.hitAffect(null);
+				}
+				var this4 = _gthis.map;
+				var key3 = Math.floor(_gthis.container.get_x() + (_gthis.container.get_y() + Game.GRID_SIZE) * scene_InGame.stage.getWidth());
+				var b3 = this4.h[key3];
+				if(b3 != null) {
+					b3.hitAffect(null);
+				}
+				_gthis.seq.clear();
+			});
+		}
+	}
+	,__class__: scene_ingame_actor_object_Block
+});
+var scene_ingame_actor_object_BombBlock = function(x,y,map) {
+	this.map = map;
+	this.cr = 16776960;
+	scene_ingame_actor_object_Object.call(this,x,y,16,16);
+	this.hitBox.set_alpha(0);
+	this.HP = 1;
+	this.spSheet = new scene_ingame_spritesheet_BombBlockSp(this);
+};
+$hxClasses["scene.ingame.actor.object.BombBlock"] = scene_ingame_actor_object_BombBlock;
+scene_ingame_actor_object_BombBlock.__name__ = ["scene","ingame","actor","object","BombBlock"];
+scene_ingame_actor_object_BombBlock.__super__ = scene_ingame_actor_object_Object;
+scene_ingame_actor_object_BombBlock.prototype = $extend(scene_ingame_actor_object_Object.prototype,{
+	map: null
+	,spSheet: null
+	,update: function() {
+		this.spSheet.update();
+		this.knockBack = 0;
+		this.invincible = 0;
+		this.shellCount = 0;
+		this.hitStop = 0;
+		if(this.HP <= 0) {
+			scene_InGame.stage.setIDByFloat(this.container.get_x(),this.container.get_y(),"0");
+			this.state.act = scene_ingame_actor_State.actions.DEAD;
+			var this1 = this.map;
+			var key = Math.floor(this.container.get_x() - Game.GRID_SIZE + this.container.get_y() * scene_InGame.stage.getWidth());
+			var b = this1.h[key];
+			if(b != null) {
+				b.hitAffect(null);
+			}
+			var this2 = this.map;
+			var key1 = Math.floor(this.container.get_x() + (this.container.get_y() - Game.GRID_SIZE) * scene_InGame.stage.getWidth());
+			var b1 = this2.h[key1];
+			if(b1 != null) {
+				b1.hitAffect(null);
+			}
+			var this3 = this.map;
+			var key2 = Math.floor(this.container.get_x() + Game.GRID_SIZE + this.container.get_y() * scene_InGame.stage.getWidth());
+			var b2 = this3.h[key2];
+			if(b2 != null) {
+				b2.hitAffect(null);
+			}
+			var this4 = this.map;
+			var key3 = Math.floor(this.container.get_x() + (this.container.get_y() + Game.GRID_SIZE) * scene_InGame.stage.getWidth());
+			var b3 = this4.h[key3];
+			if(b3 != null) {
+				b3.hitAffect(null);
+			}
+		}
+		return false;
+	}
+	,hitAffect: function(e) {
+		var v = e.getVelocity();
+		if(this.container.get_y() - (e.container.get_y() + e.hitBox.get_height()) > -4 && v.y > 0) {
+			e.addForce(new openfl_geom_Point(v.x,-3),true);
+			this.HP -= 1;
+		}
+		if(e.isLimitBreak()) {
+			e.knockBack = 6;
+			e.hitStop = 6;
+		}
+	}
+	,__class__: scene_ingame_actor_object_BombBlock
+});
+var scene_ingame_actor_object_Door = function(x,y) {
+	this.cr = 0;
+	scene_ingame_actor_object_Object.call(this,x,y,16,24);
+	var _g = this.container;
+	_g.set_y(_g.get_y() - 8);
+};
+$hxClasses["scene.ingame.actor.object.Door"] = scene_ingame_actor_object_Door;
+scene_ingame_actor_object_Door.__name__ = ["scene","ingame","actor","object","Door"];
+scene_ingame_actor_object_Door.__super__ = scene_ingame_actor_object_Object;
+scene_ingame_actor_object_Door.prototype = $extend(scene_ingame_actor_object_Object.prototype,{
+	hitAffect: function(e) {
+		this.state.act = scene_ingame_actor_State.actions.DEAD;
+		scene_InGame.goToNextFloor();
+	}
+	,__class__: scene_ingame_actor_object_Door
+});
+var scene_ingame_actor_object_Trampoline = function(x,y) {
+	this.cr = 15658496;
+	scene_ingame_actor_object_Object.call(this,x,y,16,16);
+};
+$hxClasses["scene.ingame.actor.object.Trampoline"] = scene_ingame_actor_object_Trampoline;
+scene_ingame_actor_object_Trampoline.__name__ = ["scene","ingame","actor","object","Trampoline"];
+scene_ingame_actor_object_Trampoline.__super__ = scene_ingame_actor_object_Object;
+scene_ingame_actor_object_Trampoline.prototype = $extend(scene_ingame_actor_object_Object.prototype,{
+	hitAffect: function(e) {
+		e.addForce(new openfl_geom_Point(0,-8),true);
+	}
+	,__class__: scene_ingame_actor_object_Trampoline
+});
+var scene_ingame_spritesheet_SpritesheetManager = function(target) {
 	this.spritesheet = new openfl_display_Bitmap();
 	this.target = target;
 };
-$hxClasses["spritesheet.SpritesheetManager"] = spritesheet_SpritesheetManager;
-spritesheet_SpritesheetManager.__name__ = ["spritesheet","SpritesheetManager"];
-spritesheet_SpritesheetManager.prototype = {
+$hxClasses["scene.ingame.spritesheet.SpritesheetManager"] = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_SpritesheetManager.__name__ = ["scene","ingame","spritesheet","SpritesheetManager"];
+scene_ingame_spritesheet_SpritesheetManager.prototype = {
 	target: null
 	,spritesheet: null
 	,update: function() {
 	}
-	,__class__: spritesheet_SpritesheetManager
+	,__class__: scene_ingame_spritesheet_SpritesheetManager
 };
-var spritesheet_Hero = function(target) {
+var scene_ingame_spritesheet_BlockSp = function(target) {
+	this.rect = new openfl_geom_Rectangle(0,0,16,16);
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_BlockSp.image = openfl_utils_Assets.getBitmapData("img/c_block.png");
+	this.setDrawArea(1,0);
+};
+$hxClasses["scene.ingame.spritesheet.BlockSp"] = scene_ingame_spritesheet_BlockSp;
+scene_ingame_spritesheet_BlockSp.__name__ = ["scene","ingame","spritesheet","BlockSp"];
+scene_ingame_spritesheet_BlockSp.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_BlockSp.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
+	rect: null
+	,update: function() {
+		if(this.target.state.act == scene_ingame_actor_State.actions.DEAD) {
+			this.setDrawArea(0,0);
+		}
+	}
+	,setDrawArea: function(x,y) {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		this.rect.x = this.rect.width * x;
+		this.rect.y = this.rect.height * y;
+		scene_InGame.stage.upper.bitmapData.copyPixels(scene_ingame_spritesheet_BlockSp.image,this.rect,new openfl_geom_Point(this.target.container.get_x(),this.target.container.get_y()));
+	}
+	,__class__: scene_ingame_spritesheet_BlockSp
+});
+var scene_ingame_spritesheet_BombBlockSp = function(target) {
+	this.rect = new openfl_geom_Rectangle(0,0,16,16);
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_BombBlockSp.image = openfl_utils_Assets.getBitmapData("img/c_block.png");
+	this.setDrawArea(2,0);
+};
+$hxClasses["scene.ingame.spritesheet.BombBlockSp"] = scene_ingame_spritesheet_BombBlockSp;
+scene_ingame_spritesheet_BombBlockSp.__name__ = ["scene","ingame","spritesheet","BombBlockSp"];
+scene_ingame_spritesheet_BombBlockSp.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_BombBlockSp.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
+	rect: null
+	,update: function() {
+		if(this.target.state.act == scene_ingame_actor_State.actions.DEAD) {
+			this.setDrawArea(0,0);
+		}
+	}
+	,setDrawArea: function(x,y) {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		this.rect.x = this.rect.width * x;
+		this.rect.y = this.rect.height * y;
+		scene_InGame.stage.upper.bitmapData.copyPixels(scene_ingame_spritesheet_BombBlockSp.image,this.rect,new openfl_geom_Point(this.target.container.get_x(),this.target.container.get_y()));
+	}
+	,__class__: scene_ingame_spritesheet_BombBlockSp
+});
+var scene_ingame_spritesheet_Boss1Sp = function(target) {
+	this.frame = 0;
+	this.rect = new openfl_geom_Rectangle(0,0,24,32);
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_Boss1Sp.image = openfl_utils_Assets.getBitmapData("img/c_boss1.png");
+	this.spritesheet = new openfl_display_Bitmap(new openfl_display_BitmapData(24,32));
+	this.setDrawArea(0,0);
+	target.container.addChild(this.spritesheet);
+	this.spritesheet.set_scaleX(1.3);
+	this.spritesheet.set_scaleY(1.3);
+};
+$hxClasses["scene.ingame.spritesheet.Boss1Sp"] = scene_ingame_spritesheet_Boss1Sp;
+scene_ingame_spritesheet_Boss1Sp.__name__ = ["scene","ingame","spritesheet","Boss1Sp"];
+scene_ingame_spritesheet_Boss1Sp.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_Boss1Sp.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
+	rect: null
+	,frame: null
+	,update: function() {
+		if(this.target.hitStop > 0) {
+			var _g = this.spritesheet;
+			_g.set_x(_g.get_x() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+			var _g1 = this.spritesheet;
+			_g1.set_y(_g1.get_y() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+		} else {
+			this.spritesheet.set_x(-7);
+			this.spritesheet.set_y(-13);
+		}
+		this.frame++;
+		var _g2 = this.spritesheet;
+		_g2.set_y(_g2.get_y() + 2 * Math.sin(Module.toRad(2 * this.frame % 360)));
+	}
+	,setDrawArea: function(x,y) {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		this.rect.x = this.rect.width * x;
+		this.rect.y = this.rect.height * y;
+		this.spritesheet.bitmapData.copyPixels(scene_ingame_spritesheet_Boss1Sp.image,this.rect,new openfl_geom_Point(0,0));
+	}
+	,__class__: scene_ingame_spritesheet_Boss1Sp
+});
+var scene_ingame_spritesheet_Hero = function(target) {
 	this.pat = [0,1,2,1];
 	this.frame = 0;
 	this.rect = new openfl_geom_Rectangle(0,0,24,32);
-	spritesheet_SpritesheetManager.call(this,target);
-	spritesheet_Hero.image = openfl_utils_Assets.getBitmapData("img/c_hero.png");
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_Hero.image = openfl_utils_Assets.getBitmapData("img/c_hero.png");
 	this.spritesheet = new openfl_display_Bitmap(new openfl_display_BitmapData(24,32));
 	this.setDrawArea(1,1);
 	target.container.addChild(this.spritesheet);
 	this.spritesheet.set_x(-7);
 	this.spritesheet.set_y(-14);
 };
-$hxClasses["spritesheet.Hero"] = spritesheet_Hero;
-spritesheet_Hero.__name__ = ["spritesheet","Hero"];
-spritesheet_Hero.__super__ = spritesheet_SpritesheetManager;
-spritesheet_Hero.prototype = $extend(spritesheet_SpritesheetManager.prototype,{
+$hxClasses["scene.ingame.spritesheet.Hero"] = scene_ingame_spritesheet_Hero;
+scene_ingame_spritesheet_Hero.__name__ = ["scene","ingame","spritesheet","Hero"];
+scene_ingame_spritesheet_Hero.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_Hero.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
 	rect: null
 	,frame: null
 	,pat: null
 	,update: function() {
 		if(this.target.hitStop > 0) {
-			haxe_Log.trace("hitstop",{ fileName : "Hero.hx", lineNumber : 37, className : "spritesheet.Hero", methodName : "update"});
 			var _g = this.spritesheet;
 			_g.set_x(_g.get_x() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
 			var _g1 = this.spritesheet;
@@ -72058,7 +73489,7 @@ spritesheet_Hero.prototype = $extend(spritesheet_SpritesheetManager.prototype,{
 		var x;
 		var y;
 		this.frame += Math.abs(openfl_geom_Point.distance(this.target.getVelocity(),new openfl_geom_Point(0,0)));
-		if(this.target.state.act == actor_State.actions.DEAD) {
+		if(this.target.state.act == scene_ingame_actor_State.actions.DEAD) {
 			x = 0;
 			if(this.target.hitStop > 0) {
 				y = 5;
@@ -72066,11 +73497,11 @@ spritesheet_Hero.prototype = $extend(spritesheet_SpritesheetManager.prototype,{
 				y = 6;
 			}
 			y += this.target.state.dir;
-		} else if(this.target.state.act == actor_State.actions.HOLD) {
+		} else if(this.target.state.act == scene_ingame_actor_State.actions.HOLD) {
 			x = 1;
 			y = 2 + this.target.state.dir;
 		} else {
-			if(this.target.state.command != actor_State.commands.FREE) {
+			if(this.target.state.command != scene_ingame_actor_State.commands.FREE) {
 				x = this.getPattern(this.frame / 6) + 1;
 			} else {
 				x = 0;
@@ -72093,19 +73524,92 @@ spritesheet_Hero.prototype = $extend(spritesheet_SpritesheetManager.prototype,{
 		y = Math.floor(y);
 		this.rect.x = this.rect.width * x;
 		this.rect.y = this.rect.height * y;
-		this.spritesheet.bitmapData.copyPixels(spritesheet_Hero.image,this.rect,new openfl_geom_Point(0,0));
+		this.spritesheet.bitmapData.copyPixels(scene_ingame_spritesheet_Hero.image,this.rect,new openfl_geom_Point(0,0));
 	}
-	,__class__: spritesheet_Hero
+	,__class__: scene_ingame_spritesheet_Hero
 });
-var stage_StageFactory = function() { };
-$hxClasses["stage.StageFactory"] = stage_StageFactory;
-stage_StageFactory.__name__ = ["stage","StageFactory"];
-stage_StageFactory.generate = function(stage1,floor) {
-	var fileName = stage1 == 0 ? "" : "chip04b_castle.png";
-	return new stage_Stage_$(stage1,floor,fileName);
+var scene_ingame_spritesheet_Slime = function(target) {
+	this.frame = 0;
+	this.rect = new openfl_geom_Rectangle(0,0,24,32);
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_Slime.image = openfl_utils_Assets.getBitmapData("img/c_slime.png");
+	this.spritesheet = new openfl_display_Bitmap(new openfl_display_BitmapData(24,32));
+	this.setDrawArea(1,0);
+	target.container.addChild(this.spritesheet);
 };
-var stage_Stage_$ = function(stage1,floor,fileName) {
-	this.chipKey = new haxe_ds_IntMap();
+$hxClasses["scene.ingame.spritesheet.Slime"] = scene_ingame_spritesheet_Slime;
+scene_ingame_spritesheet_Slime.__name__ = ["scene","ingame","spritesheet","Slime"];
+scene_ingame_spritesheet_Slime.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_Slime.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
+	rect: null
+	,frame: null
+	,update: function() {
+		if(this.target.hitStop > 0) {
+			var _g = this.spritesheet;
+			_g.set_x(_g.get_x() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+			var _g1 = this.spritesheet;
+			_g1.set_y(_g1.get_y() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+		} else {
+			this.spritesheet.set_x(-6);
+			this.spritesheet.set_y(-18);
+		}
+		this.frame++;
+		this.setDrawArea(this.frame / 10 % 3,0);
+	}
+	,setDrawArea: function(x,y) {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		this.rect.x = this.rect.width * x;
+		this.rect.y = this.rect.height * y;
+		this.spritesheet.bitmapData.copyPixels(scene_ingame_spritesheet_Slime.image,this.rect,new openfl_geom_Point(0,0));
+	}
+	,__class__: scene_ingame_spritesheet_Slime
+});
+var scene_ingame_spritesheet_Slime2 = function(target) {
+	this.frame = 0;
+	this.rect = new openfl_geom_Rectangle(0,0,24,32);
+	scene_ingame_spritesheet_SpritesheetManager.call(this,target);
+	scene_ingame_spritesheet_Slime2.image = openfl_utils_Assets.getBitmapData("img/c_slime2.png");
+	this.spritesheet = new openfl_display_Bitmap(new openfl_display_BitmapData(24,32));
+	this.setDrawArea(1,0);
+	target.container.addChild(this.spritesheet);
+};
+$hxClasses["scene.ingame.spritesheet.Slime2"] = scene_ingame_spritesheet_Slime2;
+scene_ingame_spritesheet_Slime2.__name__ = ["scene","ingame","spritesheet","Slime2"];
+scene_ingame_spritesheet_Slime2.__super__ = scene_ingame_spritesheet_SpritesheetManager;
+scene_ingame_spritesheet_Slime2.prototype = $extend(scene_ingame_spritesheet_SpritesheetManager.prototype,{
+	rect: null
+	,frame: null
+	,update: function() {
+		if(this.target.hitStop > 0) {
+			var _g = this.spritesheet;
+			_g.set_x(_g.get_x() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+			var _g1 = this.spritesheet;
+			_g1.set_y(_g1.get_y() + (Math.random() - 0.5) * this.target.hitStop * 0.5);
+		} else {
+			this.spritesheet.set_x(-4);
+			this.spritesheet.set_y(-8);
+		}
+		this.frame++;
+		this.setDrawArea(this.frame / 10 % 3,0);
+	}
+	,setDrawArea: function(x,y) {
+		x = Math.floor(x);
+		y = Math.floor(y);
+		this.rect.x = this.rect.width * x;
+		this.rect.y = this.rect.height * y;
+		this.spritesheet.bitmapData.copyPixels(scene_ingame_spritesheet_Slime2.image,this.rect,new openfl_geom_Point(0,0));
+	}
+	,__class__: scene_ingame_spritesheet_Slime2
+});
+var scene_ingame_stage_StageFactory = function() { };
+$hxClasses["scene.ingame.stage.StageFactory"] = scene_ingame_stage_StageFactory;
+scene_ingame_stage_StageFactory.__name__ = ["scene","ingame","stage","StageFactory"];
+scene_ingame_stage_StageFactory.generate = function(stage,floor) {
+	var fileName = stage == 0 ? "" : "chip04b_castle.png";
+	return new scene_ingame_stage_Stage_$(stage,floor,fileName);
+};
+var scene_ingame_stage_Stage_$ = function(stage,floor,fileName) {
 	this.map = [];
 	this.showY = 0;
 	this.showX = 0;
@@ -72113,13 +73617,13 @@ var stage_Stage_$ = function(stage1,floor,fileName) {
 	this.mapChip = openfl_utils_Assets.getBitmapData("img/chip.png");
 	var input;
 	try {
-		input = openfl_utils_Assets.getText("img/stage" + stage1 + "-" + floor + ".csv");
+		input = openfl_utils_Assets.getText("img/stage/stage" + stage + "-" + floor + ".csv");
 	} catch( msg ) {
 		haxe_CallStack.lastException = msg;
 		if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
 		if( js_Boot.__instanceof(msg,String) ) {
-			input = "0";
-			haxe_Log.trace(msg,{ fileName : "Stage_.hx", lineNumber : 35, className : "stage.Stage_", methodName : "new"});
+			input = "0,10,0";
+			haxe_Log.trace(msg,{ fileName : "Stage_.hx", lineNumber : 41, className : "scene.ingame.stage.Stage_", methodName : "new"});
 		} else throw(msg);
 	}
 	var tmp = input.split("\r\n");
@@ -72131,7 +73635,10 @@ var stage_Stage_$ = function(stage1,floor,fileName) {
 		var i = _g1++;
 		this.map.push(tmp[i].split(","));
 	}
-	this.bmp = new openfl_display_Bitmap(new openfl_display_BitmapData(Game.GRID_SIZE * this.w,Game.GRID_SIZE * this.h));
+	this.lower = new openfl_display_Bitmap(new openfl_display_BitmapData(Game.GRID_SIZE * this.w,Game.GRID_SIZE * this.h,true,0));
+	this.container.addChild(this.lower);
+	this.upper = new openfl_display_Bitmap(new openfl_display_BitmapData(Game.GRID_SIZE * this.w,Game.GRID_SIZE * this.h,true,0));
+	this.container.addChild(this.upper);
 	var cnt = 0;
 	var c = 52224;
 	var _g11 = 0;
@@ -72143,61 +73650,114 @@ var stage_Stage_$ = function(stage1,floor,fileName) {
 		while(_g3 < _g21) {
 			var x = _g3++;
 			var rect = new openfl_geom_Rectangle(0,0,Game.GRID_SIZE,Game.GRID_SIZE);
-			this.chipKey.h[x + y * this.w] = cnt++;
-			var _g4 = this.map[y][x];
-			if(_g4 == "1") {
+			var _g4 = this.getID(x,y);
+			switch(_g4) {
+			case "1":
 				rect.x = 16;
-			} else {
+				rect.x += this.getID(x - 1,y) != "1" ? 16 : 0;
+				rect.x += this.getID(x + 1,y) != "1" ? 32 : 0;
+				if(this.getID(x,y - 1) != "1") {
+					rect.y = 64;
+					this.lower.bitmapData.copyPixels(this.mapChip,rect,new openfl_geom_Point(x * 16,(y - 1) * 16));
+					rect.y = 16;
+				}
+				rect.y += this.getID(x,y + 1) != "1" ? 32 : 0;
+				break;
+			case "100":
+				var w = new Window(x * 16,y * 16,100,28,"Z ... Jump\nLEFT , RIGHT ... Move",false);
+				this.container.addChild(w.container);
+				this.map[y][x] = "0";
+				break;
+			case "101":
+				var w1 = new Window(x * 16,y * 16,150,28,"SHIFT Hold ... Growth\nSHIFT Doudle ... Change Control",false);
+				this.container.addChild(w1.container);
+				this.map[y][x] = "0";
+				break;
+			case "102":
+				var w2 = new Window(x * 16,y * 16,150,28,"X Hold -> Release ... Throw\nUP , DOWN ... Aiming",false);
+				this.container.addChild(w2.container);
+				this.map[y][x] = "0";
+				break;
+			case "103":
+				var w3 = new Window(x * 16,y * 16,100,28,"A ... Gather\nS ... Disband",false);
+				this.container.addChild(w3.container);
+				this.map[y][x] = "0";
+				break;
+			case "2":
+				rect.x = 80;
+				rect.x += this.getID(x - 1,y) != "2" ? 16 : 0;
+				rect.x += this.getID(x + 1,y) != "2" ? 32 : 0;
+				rect.y = this.getID(x,y - 1) != "2" ? 0 : 32;
+				this.lower.bitmapData.copyPixels(this.mapChip,rect,new openfl_geom_Point(x * 16,(y - 1) * 16));
+				rect.y = 16;
+				break;
+			default:
 				rect.x = 0;
+				rect.y = 0;
 			}
-			this.bmp.bitmapData.copyPixels(this.mapChip,rect,new openfl_geom_Point(x * 16,y * 16));
+			this.lower.bitmapData.copyPixels(this.mapChip,rect,new openfl_geom_Point(x * 16,y * 16));
 		}
 	}
-	this.container.addChild(this.bmp);
-	haxe_Log.trace("stage constructed",{ fileName : "Stage_.hx", lineNumber : 61, className : "stage.Stage_", methodName : "new"});
+	haxe_Log.trace("stage constructed",{ fileName : "Stage_.hx", lineNumber : 109, className : "scene.ingame.stage.Stage_", methodName : "new"});
 };
-$hxClasses["stage.Stage_"] = stage_Stage_$;
-stage_Stage_$.__name__ = ["stage","Stage_"];
-stage_Stage_$.prototype = {
+$hxClasses["scene.ingame.stage.Stage_"] = scene_ingame_stage_Stage_$;
+scene_ingame_stage_Stage_$.__name__ = ["scene","ingame","stage","Stage_"];
+scene_ingame_stage_Stage_$.prototype = {
 	container: null
-	,bmp: null
+	,upper: null
+	,lower: null
 	,showX: null
 	,showY: null
 	,map: null
 	,w: null
 	,h: null
 	,mapChip: null
-	,chipKey: null
-	,getMapChip: function(x_,y_) {
-		var x = Math.floor(x_ / Game.GRID_SIZE);
-		var y = Math.floor(y_ / Game.GRID_SIZE);
-		if(!(0 <= x && x < this.w) && (0 <= y && y <= this.h)) {
-			return null;
-		}
-		return this.container.getChildAt(this.chipKey.h[x + y * this.w]);
-	}
-	,getID: function(x,y) {
+	,getID: function(x_,y_) {
+		var x = Math.floor(x_);
+		var y = Math.floor(y_);
 		try {
 			if(0 <= x && x < this.w && (0 <= y && y < this.h)) {
 				return this.map[y][x];
 			}
-			if(y > this.h + 1) {
+			if(y > this.h + 2) {
 				return "-1";
+			}
+			if(!(0 <= x && x < this.w)) {
+				return "1";
 			}
 			return "0";
 		} catch( msg ) {
 			haxe_CallStack.lastException = msg;
 			if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
 			if( js_Boot.__instanceof(msg,String) ) {
-				haxe_Log.trace(msg,{ fileName : "Stage_.hx", lineNumber : 84, className : "stage.Stage_", methodName : "getID"});
+				haxe_Log.trace(msg,{ fileName : "Stage_.hx", lineNumber : 141, className : "scene.ingame.stage.Stage_", methodName : "getID"});
 				return "-1";
 			} else throw(msg);
 		}
 	}
+	,setID: function(x_,y_,ID) {
+		var x = Math.floor(x_);
+		var y = Math.floor(y_);
+		try {
+			if(0 <= x && x < this.w && (0 <= y && y < this.h)) {
+				this.map[y][x] = ID;
+				return true;
+			}
+			return false;
+		} catch( msg ) {
+			haxe_CallStack.lastException = msg;
+			if (msg instanceof js__$Boot_HaxeError) msg = msg.val;
+			if( js_Boot.__instanceof(msg,String) ) {
+				haxe_Log.trace(msg,{ fileName : "Stage_.hx", lineNumber : 160, className : "scene.ingame.stage.Stage_", methodName : "setID"});
+				return false;
+			} else throw(msg);
+		}
+	}
 	,getIDByFloat: function(x_,y_) {
-		var x = Math.floor(x_ / Game.GRID_SIZE);
-		var y = Math.floor(y_ / Game.GRID_SIZE);
-		return this.getID(x,y);
+		return this.getID(x_ / Game.GRID_SIZE,y_ / Game.GRID_SIZE);
+	}
+	,setIDByFloat: function(x_,y_,ID) {
+		return this.setID(x_ / Game.GRID_SIZE,y_ / Game.GRID_SIZE,ID);
 	}
 	,getPlayerPos: function() {
 		var _g1 = 0;
@@ -72222,7 +73782,7 @@ stage_Stage_$.prototype = {
 	,getHeight: function() {
 		return this.h;
 	}
-	,__class__: stage_Stage_$
+	,__class__: scene_ingame_stage_Stage_$
 };
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
@@ -72286,19 +73846,27 @@ if(console.log == null) {
 lime_utils_Log.throwErrors = true;
 openfl_display_DisplayObject.__broadcastEvents = new haxe_ds_StringMap();
 openfl_display_DisplayObject.__instanceCount = 0;
+lime_math_Matrix3.__identity = new lime_math_Matrix3();
+openfl_geom_Matrix.__identity = new openfl_geom_Matrix();
+openfl_geom_Matrix.__matrix3 = new lime_math_Matrix3();
+openfl_geom_Matrix.__pool = new lime_utils_ObjectPool_$openfl_$geom_$Matrix(function() {
+	return new openfl_geom_Matrix();
+},function(m) {
+	m.identity();
+});
+Game.width = 800;
+Game.height = 480;
 Game.GRID_SIZE = 16;
 Game.MAX_SPEED = 4.3;
 Game.FC_VELOCITY = 5.5;
+Game.screenSeq = new Sequencer(false);
+Game.screenSp = new openfl_display_Sprite();
+Game.isWait = false;
 Module.keyPressBuffer = [];
 Module.keyInputBuffer = [];
 Module.keyHoldBuffer = [];
 Module.keyDoubleClick = [];
 Module.prePressed = false;
-actor_ActorMediator.bulletGenerator = new actor_enemy_BulletGenerator();
-actor_ActorMediator.enemyGenerator = new actor_enemy_EnemyGenerator();
-actor_State.commands = { FREE : 0, RIGHT : 1, LEFT : 2, UP : 8};
-actor_State.actions = { TRAIL : 0, WAIT : 1, HOLD : 2, DEAD : 3};
-actor_State.directions = { LEFT : -1, RIGHT : 1};
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
@@ -72894,7 +74462,6 @@ lime_graphics_opengl__$WebGL2Context_WebGL2Context_$Impl_$.__tempPointer = (func
 	return $r;
 }(this));
 lime_math__$ColorMatrix_ColorMatrix_$Impl_$.__identity = [1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0];
-lime_math_Matrix3.__identity = new lime_math_Matrix3();
 lime_math__$Matrix4_Matrix4_$Impl_$.__identity = [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0];
 lime_media_openal_AL.NONE = 0;
 lime_media_openal_AL.FALSE = 0;
@@ -73644,13 +75211,6 @@ lime_utils__$UInt16Array_UInt16Array_$Impl_$.BYTES_PER_ELEMENT = 2;
 lime_utils__$UInt32Array_UInt32Array_$Impl_$.BYTES_PER_ELEMENT = 4;
 lime_utils__$UInt8Array_UInt8Array_$Impl_$.BYTES_PER_ELEMENT = 1;
 lime_utils__$UInt8ClampedArray_UInt8ClampedArray_$Impl_$.BYTES_PER_ELEMENT = 1;
-openfl_geom_Matrix.__identity = new openfl_geom_Matrix();
-openfl_geom_Matrix.__matrix3 = new lime_math_Matrix3();
-openfl_geom_Matrix.__pool = new lime_utils_ObjectPool_$openfl_$geom_$Matrix(function() {
-	return new openfl_geom_Matrix();
-},function(m) {
-	m.identity();
-});
 openfl_Lib.current = new openfl_display_MovieClip();
 openfl_Lib.__sentWarnings = new haxe_ds_StringMap();
 openfl__$internal_renderer_DrawCommandBuffer.empty = new openfl__$internal_renderer_DrawCommandBuffer();
@@ -73974,11 +75534,15 @@ openfl_media_SoundMixer.MAX_ACTIVE_CHANNELS = 32;
 openfl_media_SoundMixer.__soundChannels = [];
 openfl_media_SoundMixer.__soundTransform = new openfl_media_SoundTransform();
 openfl_net_NetConnection.CONNECT_SUCCESS = "NetConnection.Connect.Success";
+openfl_net_SharedObject.defaultObjectEncoding = 3;
+openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$.FLUSHED = 0;
+openfl_net__$SharedObjectFlushStatus_SharedObjectFlushStatus_$Impl_$.PENDING = 1;
 openfl_net__$URLLoaderDataFormat_URLLoaderDataFormat_$Impl_$.BINARY = 0;
 openfl_net__$URLLoaderDataFormat_URLLoaderDataFormat_$Impl_$.TEXT = 1;
 openfl_net__$URLLoaderDataFormat_URLLoaderDataFormat_$Impl_$.VARIABLES = 2;
 openfl_system_ApplicationDomain.currentDomain = new openfl_system_ApplicationDomain(null);
 openfl_system_SecurityDomain.currentDomain = new openfl_system_SecurityDomain();
+openfl_system_System.useCodePage = false;
 openfl_text__$AntiAliasType_AntiAliasType_$Impl_$.ADVANCED = 0;
 openfl_text__$AntiAliasType_AntiAliasType_$Impl_$.NORMAL = 1;
 openfl_text_Font.__registeredFonts = [];
@@ -74147,5 +75711,14 @@ openfl_utils_TouchData.__pool = new lime_utils_ObjectPool_$openfl_$utils_$TouchD
 },function(data) {
 	data.reset();
 });
+scene_InGame.gameEnd = false;
+scene_InGame.goToNextStage = false;
+scene_ingame_actor_ActorMediator.bulletGenerator = new scene_ingame_actor_enemy_BulletGenerator();
+scene_ingame_actor_ActorMediator.objectGenerator = new scene_ingame_actor_object_ObjectGenerator();
+scene_ingame_actor_ActorMediator.enemyGenerator = new scene_ingame_actor_enemy_EnemyGenerator();
+scene_ingame_actor_PlayerManager.pcPos = new openfl_geom_Point();
+scene_ingame_actor_State.commands = { FREE : 0, RIGHT : 1, LEFT : 2, UP : 8, DOWN : 16};
+scene_ingame_actor_State.actions = { TRAIL : 0, WAIT : 1, HOLD : 2, DEAD : 3};
+scene_ingame_actor_State.directions = { LEFT : -1, RIGHT : 1};
 ApplicationMain.main();
 })(typeof exports != "undefined" ? exports : typeof window != "undefined" ? window : typeof self != "undefined" ? self : this, typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);
