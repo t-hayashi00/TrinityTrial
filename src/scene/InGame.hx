@@ -6,6 +6,7 @@ import openfl.display.Sprite;
 import openfl.geom.Point;
 import openfl.net.SharedObject;
 import animator.Animator;
+import scene.GameOver;
 import scene.ingame.actor.ActorMediator;
 import scene.ingame.stage.StageFactory;
 import scene.ingame.stage.Stage_;
@@ -22,16 +23,19 @@ class InGame extends Scene
 	public static var floorNum:Int;
 	public static var party:Int;
 	public static var animator:Animator;
+	public static var gameEnd:Bool = false;
 	private static var goToNextStage:Bool = false;
 
 	private var field:Sprite = new Sprite();
 	private var actorMediator:ActorMediator;
 	private var panorama:Bitmap;
-	
+	private var seq:Sequencer = new Sequencer(false);
+
 	public function new(stageNum_:Int, floorNum_:Int, party:Int)
 	{
 		stageNum = stageNum_;
 		floorNum = floorNum_;
+		gameEnd = false;
 		panorama = new Bitmap(Assets.getBitmapData("img/panorama.png"));
 		container.addChild(panorama);
 		container.addChild(field);
@@ -46,11 +50,11 @@ class InGame extends Scene
 		actorMediator.update();
 		camera(actorMediator.getSubject());
 		animator = new Animator(field);
-		trace("scene generated");
 	}
 
 	public override function update():Scene
 	{
+		seq.run();
 		animator.draw();
 		camera(actorMediator.getSubject());
 		if (actorMediator.update())
@@ -63,6 +67,10 @@ class InGame extends Scene
 		else if (goToNextStage)
 		{
 			return new InGame(stageNum, floorNum, party);
+		}
+		else if (gameEnd)
+		{
+			return new GameOver();
 		}
 		return this;
 	}
@@ -87,7 +95,7 @@ class InGame extends Scene
 	{
 		var dest:Point = new Point(Game.width / 2 - subject.x * field.scaleX, Game.height / 2 - subject.y * field.scaleY);
 		var scroll:Point = dest;
-		
+
 		field.x = (field.x + scroll.x) /2;
 		field.y = (field.y + scroll.y) /2;
 	}

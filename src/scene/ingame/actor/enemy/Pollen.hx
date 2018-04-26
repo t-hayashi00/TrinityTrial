@@ -11,7 +11,7 @@ class Pollen extends Enemy
 	
 	public override function new(x:Float, y:Float) 
 	{
-		cr = 0xFFAAAA;
+		cr = 0x10CF4A;
 		super(x, y, 5, 5);
 		TYPE = "Object";
 		ATK = 1;

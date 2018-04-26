@@ -1,6 +1,9 @@
 package scene.ingame.actor.enemy;
 import openfl.geom.Point;
 import scene.ingame.actor.State;
+import scene.ingame.spritesheet.Slime2;
+import scene.ingame.spritesheet.SpritesheetManager;
+
 using Sequencer;
 
 /**
@@ -11,11 +14,14 @@ class Bloomer extends Enemy
 {
 	private var seq:Sequencer = new Sequencer(true);
 	private var enemies:List<Dynamic>;
+	private var spSheet:SpritesheetManager;
 
 	public override function new(x:Float, y:Float, enemies:List<Dynamic>)
 	{
 		cr = 0xFF0000;
-		super(x, y, 16, 16);
+		super(x, y, 16, 22);
+		spSheet = new Slime2(this);
+		hitBox.alpha = 0;
 		ATK = 0;
 		this.enemies = enemies;
 
@@ -37,6 +43,7 @@ class Bloomer extends Enemy
 
 	public override function update():Bool
 	{
+		spSheet.update();
 		if (state.act != State.actions.DEAD) seq.run();
 		return super.update();
 	}

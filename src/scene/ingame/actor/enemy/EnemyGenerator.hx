@@ -20,6 +20,7 @@ class EnemyGenerator extends Generator
 			e = new Bloomer(x, y, target);
 		case 23:
 			e = new Boss1(x, y);
+			add(new BossObserver(e));
 		default:
 			return false;
 		}

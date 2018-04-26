@@ -1,5 +1,7 @@
 package scene.ingame.actor.enemy;
 import scene.ingame.actor.State;
+import scene.ingame.spritesheet.Slime;
+import scene.ingame.spritesheet.SpritesheetManager;
 using Sequencer;
 
 /**
@@ -9,12 +11,14 @@ using Sequencer;
 class Walker extends Enemy
 {
 	private var seq:Sequencer = new Sequencer(true);
-	private var bullets:List<Bullet>;
-	
-	public override function new(x:Float, y:Float) 
+	private var spSheet:SpritesheetManager;
+
+	public override function new(x:Float, y:Float)
 	{
 		cr = 0xFF0000;
-		super(x, y, 12, 16);
+		super(x, y, 12, 13);
+		spSheet = new Slime(this);
+		hitBox.alpha = 0;
 		ATK = 1;
 		seq.add(state.command = State.commands.LEFT);
 		seq.wait(60);
@@ -29,9 +33,10 @@ class Walker extends Enemy
 		seq.add(state.command = State.commands.UP);
 		seq.wait(60);
 	}
-		
-	public override function update():Bool{
-		if(state.act != State.actions.DEAD) seq.run();
+
+	public override function update():Bool
+	{
+		spSheet.update(); 		if (state.act != State.actions.DEAD) seq.run();
 		return super.update();
 	}
 }

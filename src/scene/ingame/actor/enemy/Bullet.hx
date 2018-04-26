@@ -37,8 +37,10 @@ class Bullet
 		this.lifetime = lifetime;
 		this.reflect = reflect;
 		this.through = through;
-		container.graphics.beginFill(0x004400,1.0);
-		container.graphics.drawRect(0, 0, 3, 3);
+		container.graphics.beginFill(0x000000,1.0);
+		container.graphics.drawCircle(0, 0, 3);
+		container.graphics.beginFill(0x10CF4A,1.0);
+		container.graphics.drawCircle(0, 0, 2.5);
 	}
 	
 	public function update()
